@@ -1,0 +1,333 @@
+/* =========================
+   PAGE
+========================= */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.bank-page {
+  width: 100%;
+  min-height: 100vh;
+  background: #eef4fb;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.bank-header {
+  width: 100%;
+  height: 60px;
+  background: linear-gradient(90deg, #0b4ea2, #2f7fd6);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 30px;
+  flex-shrink: 0;
+}
+
+.header-left h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+}
+
+.header-left p {
+  margin-top: 2px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.header-right {
+  display: flex;
+  gap: 12px;
+}
+
+.user-box {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 5px 12px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: white;
+}
+
+.user-box span {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.user-box strong {
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+/* =========================
+   MAIN
+========================= */
+
+.bank-container {
+  width: 100%;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 20px 30px;
+  overflow-y: auto;
+}
+
+/* =========================
+   CARD
+========================= */
+
+.bank-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px 24px;
+  width: 100%;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  color: #1a202c;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #edf3fb;
+}
+
+.card-heading svg {
+  font-size: 24px;
+  color: #0b4ea2;
+}
+
+.card-heading h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+/* =========================
+   FORM
+========================= */
+
+.form-row {
+  display: flex;
+  gap: 15px;
+  width: 100%;
+}
+
+.form-row .field {
+  flex: 1;
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a5568;
+}
+
+/* =========================
+   INPUT
+========================= */
+
+.input-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  background: #f8fbff;
+  border: 1px solid #d8e5f3;
+  border-radius: 8px;
+  padding: 0 12px;
+  transition: 0.2s;
+}
+
+.input-box:hover {
+  border-color: #0b4ea2;
+}
+
+.input-box:focus-within {
+  border-color: #0b4ea2;
+  box-shadow: 0 0 0 3px rgba(11, 78, 162, 0.1);
+}
+
+.input-box svg {
+  color: #718096;
+  font-size: 14px;
+}
+
+.input-box input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: #2d3748;
+  width: 100%;
+}
+
+.input-box input[readonly] {
+  color: #4a5568;
+  font-weight: 600;
+  background: transparent;
+}
+
+/* =========================
+   TEXTAREA
+========================= */
+
+.textarea-box {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f8fbff;
+  border: 1px solid #d8e5f3;
+  border-radius: 8px;
+  transition: 0.2s;
+}
+
+.textarea-box:hover, .textarea-box:focus-within {
+  border-color: #0b4ea2;
+}
+
+.textarea-box svg {
+  margin-top: 2px;
+  color: #718096;
+  font-size: 14px;
+}
+
+.textarea-box textarea {
+  flex: 1;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  font-size: 13px;
+  color: #2d3748;
+  font-family: inherit;
+}
+
+/* =========================
+   IFSC
+========================= */
+
+.ifsc-wrapper {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.ifsc-wrapper .input-box {
+  flex: 1;
+}
+
+.verify-btn {
+  height: 40px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  background: #0b4ea2;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  white-space: nowrap;
+}
+
+.verify-btn:hover {
+  background: #083d81;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+.button-group {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #edf3fb;
+}
+
+.cancel-btn {
+  height: 40px;
+  padding: 0 20px;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  background: white;
+  color: #4a5568;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.update-btn {
+  height: 40px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 8px;
+  background: #0b4ea2;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.cancel-btn:hover {
+  background: #f7fafc;
+}
+
+.update-btn:hover {
+  background: #083d81;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 900px) {
+  .bank-container {
+    grid-template-columns: 1fr;
+  }
+  
+  html, body, #root {
+    overflow-y: auto;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
