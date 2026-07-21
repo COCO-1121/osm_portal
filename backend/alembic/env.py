@@ -4,8 +4,11 @@ from app.db.database import Base
 import app.models
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
-
+from app.models.answer_script import AnswerScript
 from alembic import context
+from app.models.script_rejection import ScriptRejection
+from app.models.admin_review_action import AdminReviewAction
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

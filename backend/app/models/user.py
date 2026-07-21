@@ -40,7 +40,12 @@ class User(Base):
         unique=True,
         nullable=True,
     )
-
+    
+    institute_id: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+    )
+    
     password_hash: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
@@ -72,3 +77,10 @@ class User(Base):
     )
 
     role = relationship("Role")
+
+    managed_by_admin_id: Mapped[uuid.UUID | None] = mapped_column(
+    UUID(as_uuid=True),
+    ForeignKey("users.id"),
+    nullable=True,
+    index=True,
+)

@@ -1,8 +1,8 @@
-import EvaluationHeader from "../components/evaluation/EvaluationHeader";
-import QuestionPanel from "../components/evaluation/QuestionPanel";
-import ImageViewer from "../components/evaluation/ImageViewer";
-import BottomToolbar from "../components/evaluation/BottomToolbar";
-import "../components/evaluation/Evaluation.css";
+import EvaluationHeader from "../components/EvaluationHeader";
+import QuestionPanel from "../components/QuestionPanel";
+import ImageViewer from "../components/ImageViewer";
+import BottomToolbar from "../components/BottomToolbar";
+import "../components/Evaluation.css";
 
 function EvaluationPage() {
   return (

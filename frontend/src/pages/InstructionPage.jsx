@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { Monitor, ShieldCheck, AlertTriangle, BookOpen, CheckCircle } from "lucide-react";
-import "./InstructionPage.css";
 import Footer from "../components/Footer";
 export default function InstructionPage() {
   const navigate = useNavigate();

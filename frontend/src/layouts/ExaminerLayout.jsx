@@ -2,9 +2,9 @@ import { useState } from "react";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 import { Outlet } from "react-router-dom";
-import "./DashboardLayout.css";
+import "./ExaminerLayout.css";
 
-export default function DashboardLayout() {
+export default function ExaminerLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (

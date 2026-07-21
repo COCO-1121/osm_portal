@@ -1,0 +1,412 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from sqlalchemy import select
+
+from app.db.session import get_db
+from app.models.user import User
+from app.models.role import Role
+from app.schemas.examiner import (
+    CreateExaminerRequest,
+    UpdateExaminerRequest,
+    ResetPasswordRequest,
+    UpdateExaminerStatusRequest,
+    ExaminerResponse,
+)
+from app.core.dependencies import require_admin
+from app.core.security import hash_password
+from app.utils.audit_logger import create_audit_log
+
+
+router = APIRouter(
+    prefix="/api/v1/admin",
+    tags=["Examiner Management"],
+)
+
+
+@router.post(
+    "/examiners",
+    response_model=ExaminerResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_examiner(
+    payload: CreateExaminerRequest,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_admin),
+):
+    # -----------------------------
+    # Check duplicate Login User ID
+    # -----------------------------
+    existing = db.scalar(
+        select(User).where(
+            User.user_id == payload.user_id
+        )
+    )
+
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Login User ID already exists.",
+        )
+
+    # -----------------------------
+    # Check duplicate Email
+    # -----------------------------
+    existing = db.scalar(
+        select(User).where(
+            User.email == payload.email
+        )
+    )
+
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already exists.",
+        )
+
+    # -----------------------------
+    # Check duplicate Phone
+    # -----------------------------
+    existing = db.scalar(
+        select(User).where(
+            User.phone == payload.phone
+        )
+    )
+
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Phone number already exists.",
+        )
+
+    # -----------------------------
+    # Get EXAMINER role
+    # -----------------------------
+    examiner_role = db.scalar(
+        select(Role).where(
+            Role.name == "EXAMINER"
+        )
+    )
+
+    if examiner_role is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="EXAMINER role not found.",
+        )
+
+    # -----------------------------
+    # Create Examiner
+    # -----------------------------
+    examiner = User(
+        user_id=payload.user_id,
+        name=payload.name,
+        email=payload.email,
+        phone=payload.phone,
+        password_hash=hash_password(payload.password),
+        role_id=examiner_role.id,
+        managed_by_admin_id=current_admin.id,
+        is_active=True,
+    )
+
+    db.add(examiner)
+    db.commit()
+    db.refresh(examiner)
+
+    # Log the action
+    create_audit_log(
+        db=db,
+        admin=current_admin,
+        action="Created Examiner",
+        target=examiner.user_id,
+    )
+
+    return ExaminerResponse(
+        id=str(examiner.id),
+        user_id=examiner.user_id,
+        name=examiner.name,
+        email=examiner.email,
+        phone=examiner.phone,
+        is_active=examiner.is_active,
+    )
+
+
+@router.get(
+    "/examiners",
+    response_model=list[ExaminerResponse],
+)
+def get_examiners(
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_admin),
+):
+    examiner_role = db.scalar(
+        select(Role).where(
+            Role.name == "EXAMINER"
+        )
+    )
+
+    if examiner_role is None:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="EXAMINER role not found.",
+        )
+
+    examiners = (
+        db.query(User)
+        .filter(
+            User.role_id == examiner_role.id,
+            User.managed_by_admin_id == current_admin.id,
+        )
+        .order_by(User.user_id)
+        .all()
+    )
+
+    return [
+        ExaminerResponse(
+            id=str(examiner.id),
+            user_id=examiner.user_id,
+            name=examiner.name,
+            email=examiner.email,
+            phone=examiner.phone,
+            is_active=examiner.is_active,
+        )
+        for examiner in examiners
+    ]
+
+@router.get(
+    "/examiners/{examiner_id}",
+    response_model=ExaminerResponse,
+)
+def get_examiner_by_id(
+    examiner_id: str,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_admin),
+):
+    examiner = db.scalar(
+        select(User).where(
+            User.id == examiner_id
+        )
+    )
+
+    if examiner is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Examiner not found.",
+        )
+
+    examiner_role = db.scalar(
+        select(Role).where(
+            Role.name == "EXAMINER"
+        )
+    )
+
+    if examiner.role_id != examiner_role.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Examiner not found.",
+        )
+
+    # Security check
+    if examiner.managed_by_admin_id != current_admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to access this examiner.",
+        )
+
+    return ExaminerResponse(
+        id=str(examiner.id),
+        user_id=examiner.user_id,
+        name=examiner.name,
+        email=examiner.email,
+        phone=examiner.phone,
+        is_active=examiner.is_active,
+    )
+    
+@router.put(
+    "/examiners/{examiner_id}",
+    response_model=ExaminerResponse,
+)
+def update_examiner(
+    examiner_id: str,
+    payload: UpdateExaminerRequest,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_admin),
+):
+    examiner = db.scalar(
+        select(User).where(
+            User.id == examiner_id
+        )
+    )
+
+    if examiner is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Examiner not found.",
+        )
+
+    if examiner.managed_by_admin_id != current_admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to update this examiner.",
+        )
+
+    # -----------------------------
+    # Duplicate Login User ID
+    # -----------------------------
+    existing = db.scalar(
+        select(User).where(
+            User.user_id == payload.user_id,
+            User.id != examiner.id,
+        )
+    )
+
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Login User ID already exists.",
+        )
+
+    # -----------------------------
+    # Duplicate Email
+    # -----------------------------
+    existing = db.scalar(
+        select(User).where(
+            User.email == payload.email,
+            User.id != examiner.id,
+        )
+    )
+
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email already exists.",
+        )
+
+    # -----------------------------
+    # Duplicate Phone
+    # -----------------------------
+    existing = db.scalar(
+        select(User).where(
+            User.phone == payload.phone,
+            User.id != examiner.id,
+        )
+    )
+
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Phone number already exists.",
+        )
+
+    examiner.user_id = payload.user_id
+    examiner.name = payload.name
+    examiner.email = payload.email
+    examiner.phone = payload.phone
+    examiner.is_active = payload.is_active
+
+    db.commit()
+    db.refresh(examiner)
+
+    return ExaminerResponse(
+        id=str(examiner.id),
+        user_id=examiner.user_id,
+        name=examiner.name,
+        email=examiner.email,
+        phone=examiner.phone,
+        is_active=examiner.is_active,
+    )
+    
+@router.put(
+    "/examiners/{examiner_id}/password",
+    status_code=status.HTTP_200_OK,
+)
+def reset_examiner_password(
+    examiner_id: str,
+    payload: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_admin),
+):
+    examiner = db.scalar(
+        select(User).where(
+            User.id == examiner_id
+        )
+    )
+
+    if examiner is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Examiner not found.",
+        )
+
+    if examiner.managed_by_admin_id != current_admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to reset this examiner's password.",
+        )
+
+    examiner.password_hash = hash_password(
+        payload.password
+    )
+
+    db.commit()
+
+    # Log the action
+    create_audit_log(
+        db=db,
+        admin=current_admin,
+        action="Password Reset",
+        target=examiner.user_id,
+    )
+
+    return {
+        "message": "Password reset successfully."
+    }
+    
+@router.patch(
+    "/examiners/{examiner_id}/status",
+    response_model=ExaminerResponse,
+)
+def update_examiner_status(
+    examiner_id: str,
+    payload: UpdateExaminerStatusRequest,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(require_admin),
+):
+    examiner = db.scalar(
+        select(User).where(
+            User.id == examiner_id
+        )
+    )
+
+    if examiner is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Examiner not found.",
+        )
+
+    if examiner.managed_by_admin_id != current_admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to update this examiner.",
+        )
+
+    examiner.is_active = payload.is_active
+
+    db.commit()
+    db.refresh(examiner)
+
+    # Log the action
+    action = "Activated Examiner" if payload.is_active else "Deactivated Examiner"
+    create_audit_log(
+        db=db,
+        admin=current_admin,
+        action=action,
+        target=examiner.user_id,
+    )
+
+    return ExaminerResponse(
+        id=str(examiner.id),
+        user_id=examiner.user_id,
+        name=examiner.name,
+        email=examiner.email,
+        phone=examiner.phone,
+        is_active=examiner.is_active,
+    )
