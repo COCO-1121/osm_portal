@@ -5,7 +5,7 @@ from app.core.config import settings
 
 
 engine = create_engine(
-    settings.DATABASE_URL,
+    settings.ADMIN_DATABASE_URL,
     echo=True,
 )
 

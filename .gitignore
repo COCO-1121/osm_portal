@@ -24,6 +24,14 @@ dist/
 .vscode/
 .idea/
 
+# Storage and local scans
+osm_scan/
+**/osm_scan/
+uploads/
+**/uploads/
+app/storage/
+**/storage/
+
 # OS files
 .DS_Store
 Thumbs.db

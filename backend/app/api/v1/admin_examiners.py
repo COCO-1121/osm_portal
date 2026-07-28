@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-from app.db.session import get_db
+from app.db.session import get_db, get_examiner_db
 from app.models.user import User
 from app.models.role import Role
 from app.schemas.examiner import (
@@ -31,12 +31,23 @@ router = APIRouter(
 def create_examiner(
     payload: CreateExaminerRequest,
     db: Session = Depends(get_db),
+    examiner_db: Session = Depends(get_examiner_db),
     current_admin: User = Depends(require_admin),
 ):
+    print("\n" + "=" * 50)
+    print("[DEBUG] RECEIVED EXAMINER CREATION DATA")
+    print(f"  - Login User ID: '{payload.user_id}'")
+    print(f"  - Name:          '{payload.name}'")
+    print(f"  - Email:         '{payload.email}'")
+    print(f"  - Phone:         '{payload.phone}'")
+    print(f"  - Password:      '{payload.password}'")
+    print(f"  - Institute ID:  '{payload.institute_id or getattr(current_admin, 'institute_id', 'INST-001')}'")
+    print("=" * 50 + "\n")
+
     # -----------------------------
-    # Check duplicate Login User ID
+    # Check duplicate Login User ID in osm_examiner
     # -----------------------------
-    existing = db.scalar(
+    existing = examiner_db.scalar(
         select(User).where(
             User.user_id == payload.user_id
         )
@@ -49,9 +60,9 @@ def create_examiner(
         )
 
     # -----------------------------
-    # Check duplicate Email
+    # Check duplicate Email in osm_examiner
     # -----------------------------
-    existing = db.scalar(
+    existing = examiner_db.scalar(
         select(User).where(
             User.email == payload.email
         )
@@ -64,9 +75,9 @@ def create_examiner(
         )
 
     # -----------------------------
-    # Check duplicate Phone
+    # Check duplicate Phone in osm_examiner
     # -----------------------------
-    existing = db.scalar(
+    existing = examiner_db.scalar(
         select(User).where(
             User.phone == payload.phone
         )
@@ -79,9 +90,9 @@ def create_examiner(
         )
 
     # -----------------------------
-    # Get EXAMINER role
+    # Get EXAMINER role from osm_examiner
     # -----------------------------
-    examiner_role = db.scalar(
+    examiner_role = examiner_db.scalar(
         select(Role).where(
             Role.name == "EXAMINER"
         )
@@ -94,24 +105,27 @@ def create_examiner(
         )
 
     # -----------------------------
-    # Create Examiner
+    # Create Examiner in osm_examiner
     # -----------------------------
+    examiner_institute_id = payload.institute_id or getattr(current_admin, "institute_id", "INST-001")
+
     examiner = User(
         user_id=payload.user_id,
         name=payload.name,
         email=payload.email,
         phone=payload.phone,
+        institute_id=examiner_institute_id,
         password_hash=hash_password(payload.password),
         role_id=examiner_role.id,
         managed_by_admin_id=current_admin.id,
         is_active=True,
     )
 
-    db.add(examiner)
-    db.commit()
-    db.refresh(examiner)
+    examiner_db.add(examiner)
+    examiner_db.commit()
+    examiner_db.refresh(examiner)
 
-    # Log the action
+    # Log the action in admin db
     create_audit_log(
         db=db,
         admin=current_admin,
@@ -125,6 +139,7 @@ def create_examiner(
         name=examiner.name,
         email=examiner.email,
         phone=examiner.phone,
+        institute_id=examiner.institute_id,
         is_active=examiner.is_active,
     )
 
@@ -134,10 +149,10 @@ def create_examiner(
     response_model=list[ExaminerResponse],
 )
 def get_examiners(
-    db: Session = Depends(get_db),
+    examiner_db: Session = Depends(get_examiner_db),
     current_admin: User = Depends(require_admin),
 ):
-    examiner_role = db.scalar(
+    examiner_role = examiner_db.scalar(
         select(Role).where(
             Role.name == "EXAMINER"
         )
@@ -150,7 +165,7 @@ def get_examiners(
         )
 
     examiners = (
-        db.query(User)
+        examiner_db.query(User)
         .filter(
             User.role_id == examiner_role.id,
             User.managed_by_admin_id == current_admin.id,
@@ -166,6 +181,7 @@ def get_examiners(
             name=examiner.name,
             email=examiner.email,
             phone=examiner.phone,
+            institute_id=examiner.institute_id,
             is_active=examiner.is_active,
         )
         for examiner in examiners
@@ -177,10 +193,10 @@ def get_examiners(
 )
 def get_examiner_by_id(
     examiner_id: str,
-    db: Session = Depends(get_db),
+    examiner_db: Session = Depends(get_examiner_db),
     current_admin: User = Depends(require_admin),
 ):
-    examiner = db.scalar(
+    examiner = examiner_db.scalar(
         select(User).where(
             User.id == examiner_id
         )
@@ -192,7 +208,7 @@ def get_examiner_by_id(
             detail="Examiner not found.",
         )
 
-    examiner_role = db.scalar(
+    examiner_role = examiner_db.scalar(
         select(Role).where(
             Role.name == "EXAMINER"
         )
@@ -217,6 +233,7 @@ def get_examiner_by_id(
         name=examiner.name,
         email=examiner.email,
         phone=examiner.phone,
+        institute_id=examiner.institute_id,
         is_active=examiner.is_active,
     )
     
@@ -227,10 +244,10 @@ def get_examiner_by_id(
 def update_examiner(
     examiner_id: str,
     payload: UpdateExaminerRequest,
-    db: Session = Depends(get_db),
+    examiner_db: Session = Depends(get_examiner_db),
     current_admin: User = Depends(require_admin),
 ):
-    examiner = db.scalar(
+    examiner = examiner_db.scalar(
         select(User).where(
             User.id == examiner_id
         )
@@ -251,7 +268,7 @@ def update_examiner(
     # -----------------------------
     # Duplicate Login User ID
     # -----------------------------
-    existing = db.scalar(
+    existing = examiner_db.scalar(
         select(User).where(
             User.user_id == payload.user_id,
             User.id != examiner.id,
@@ -267,7 +284,7 @@ def update_examiner(
     # -----------------------------
     # Duplicate Email
     # -----------------------------
-    existing = db.scalar(
+    existing = examiner_db.scalar(
         select(User).where(
             User.email == payload.email,
             User.id != examiner.id,
@@ -283,7 +300,7 @@ def update_examiner(
     # -----------------------------
     # Duplicate Phone
     # -----------------------------
-    existing = db.scalar(
+    existing = examiner_db.scalar(
         select(User).where(
             User.phone == payload.phone,
             User.id != examiner.id,
@@ -302,8 +319,8 @@ def update_examiner(
     examiner.phone = payload.phone
     examiner.is_active = payload.is_active
 
-    db.commit()
-    db.refresh(examiner)
+    examiner_db.commit()
+    examiner_db.refresh(examiner)
 
     return ExaminerResponse(
         id=str(examiner.id),
@@ -311,6 +328,7 @@ def update_examiner(
         name=examiner.name,
         email=examiner.email,
         phone=examiner.phone,
+        institute_id=examiner.institute_id,
         is_active=examiner.is_active,
     )
     
@@ -322,9 +340,10 @@ def reset_examiner_password(
     examiner_id: str,
     payload: ResetPasswordRequest,
     db: Session = Depends(get_db),
+    examiner_db: Session = Depends(get_examiner_db),
     current_admin: User = Depends(require_admin),
 ):
-    examiner = db.scalar(
+    examiner = examiner_db.scalar(
         select(User).where(
             User.id == examiner_id
         )
@@ -346,7 +365,7 @@ def reset_examiner_password(
         payload.password
     )
 
-    db.commit()
+    examiner_db.commit()
 
     # Log the action
     create_audit_log(
@@ -368,9 +387,10 @@ def update_examiner_status(
     examiner_id: str,
     payload: UpdateExaminerStatusRequest,
     db: Session = Depends(get_db),
+    examiner_db: Session = Depends(get_examiner_db),
     current_admin: User = Depends(require_admin),
 ):
-    examiner = db.scalar(
+    examiner = examiner_db.scalar(
         select(User).where(
             User.id == examiner_id
         )
@@ -390,8 +410,8 @@ def update_examiner_status(
 
     examiner.is_active = payload.is_active
 
-    db.commit()
-    db.refresh(examiner)
+    examiner_db.commit()
+    examiner_db.refresh(examiner)
 
     # Log the action
     action = "Activated Examiner" if payload.is_active else "Deactivated Examiner"
@@ -408,5 +428,6 @@ def update_examiner_status(
         name=examiner.name,
         email=examiner.email,
         phone=examiner.phone,
+        institute_id=examiner.institute_id,
         is_active=examiner.is_active,
     )

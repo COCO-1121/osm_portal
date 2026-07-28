@@ -1,17 +1,21 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-
-from app.core.config import settings
-
-engine = create_engine(
-    settings.DATABASE_URL,
-    echo=True,
+# Backward compatibility wrapper for db session imports
+from app.db.session import (
+    admin_engine,
+    examiner_engine,
+    uploader_engine,
+    AdminSessionLocal,
+    ExaminerSessionLocal,
+    UploaderSessionLocal,
+    AdminBase,
+    ExaminerBase,
+    UploaderBase,
+    Base,
+    get_admin_db,
+    get_examiner_db,
+    get_uploader_db,
+    get_db,
 )
 
-SessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine,
-)
-
-Base = declarative_base()
+# Engine alias
+engine = admin_engine
+SessionLocal = AdminSessionLocal

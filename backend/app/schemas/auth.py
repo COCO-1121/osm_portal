@@ -8,6 +8,14 @@ class AdminLoginRequest(BaseModel):
     password: str
 
 
+class LoginRequest(BaseModel):
+    examiner_id: str
+    institute_id: str
+    password: str
+    contact: str
+    dob: str
+
+
 class UserResponse(BaseModel):
     user_id: str
     name: str

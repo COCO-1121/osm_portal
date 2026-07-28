@@ -1,4 +1,5 @@
 from app.models.role import Role
+from app.models.examiner_login_log import ExaminerLoginLog
 from app.models.user import User
 from app.models.answer_script import AnswerScript
 from app.models.script_rejection import ScriptRejection
@@ -11,4 +12,5 @@ __all__ = [
     "User",
     "AuditLog",
     "LoginHistory",
+    "ExaminerLoginLog",
 ]
