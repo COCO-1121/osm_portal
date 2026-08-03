@@ -21,6 +21,13 @@ function CreateExaminerModal({ onClose, onSuccess }) {
     }));
   };
 
+  const handleClose = () => {
+    if (document.activeElement) {
+      document.activeElement.blur();
+    }
+    onClose();
+  };
+
   const validate = () => {
     const e = {};
 
@@ -46,6 +53,18 @@ function CreateExaminerModal({ onClose, onSuccess }) {
     setErrors(e);
 
     return Object.keys(e).length === 0;
+  };
+
+  const handleReset = (e) => {
+    if (e) e.preventDefault();
+    setForm({
+      user_id: "",
+      name: "",
+      email: "",
+      phone: "",
+      password: "",
+    });
+    setErrors({});
   };
 
   const handleSubmit = async (e) => {
@@ -77,7 +96,7 @@ function CreateExaminerModal({ onClose, onSuccess }) {
             Create Examiner
           </h2>
 
-          <button onClick={onClose}>
+          <button type="button" onClick={handleClose}>
             <FaTimes />
           </button>
         </div>
@@ -85,6 +104,7 @@ function CreateExaminerModal({ onClose, onSuccess }) {
         {/* Form */}
         <form
           onSubmit={handleSubmit}
+          autoComplete="off"
           className="p-6 space-y-4 overflow-y-auto flex-1"
         >
           {[
@@ -121,11 +141,12 @@ function CreateExaminerModal({ onClose, onSuccess }) {
 
               <input
                 type={item.type}
+                autoComplete={item.type === "password" ? "new-password" : "off"}
                 value={form[item.field]}
                 onChange={(e) =>
                   updateField(item.field, e.target.value)
                 }
-                className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-600 outline-none"
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-600 outline-none"
               />
 
               {errors[item.field] && (
@@ -137,21 +158,33 @@ function CreateExaminerModal({ onClose, onSuccess }) {
           ))}
 
           {/* Footer */}
-          <div className="flex justify-end gap-3 pt-4 border-t flex-shrink-0">
+          <div className="flex justify-between items-center pt-4 border-t flex-shrink-0">
             <button
               type="button"
-              onClick={onClose}
-              className="px-5 py-2 rounded-lg border"
+              onClick={handleReset}
+              disabled={loading}
+              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium text-sm cursor-pointer"
             >
-              Cancel
+              Reset
             </button>
 
-            <button
-              disabled={loading}
-              className="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg"
-            >
-              {loading ? "Creating..." : "Create Examiner"}
-            </button>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="px-5 py-2 rounded-lg border text-sm font-medium cursor-pointer text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg text-sm font-semibold cursor-pointer"
+              >
+                {loading ? "Creating..." : "Create Examiner"}
+              </button>
+            </div>
           </div>
         </form>
       </div>

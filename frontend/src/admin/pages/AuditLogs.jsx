@@ -85,11 +85,10 @@ function FilterDropdown({ label, options, value, onChange }) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all duration-150 ${
-          value
+        className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all duration-150 ${value
             ? "border-blue-500 bg-blue-50 text-blue-700"
             : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50"
-        }`}
+          }`}
       >
         {label}
         {value && (
@@ -163,16 +162,16 @@ function datePresetFilter(log, preset) {
 function getActionMeta(action) {
   const a = (action || "").toLowerCase();
   if (a.includes("deactivate") || a.includes("delete") || a.includes("remove"))
-    return { badge: "bg-red-100 text-red-700",    dot: "#ef4444" }; // 🔴
+    return { badge: "bg-red-100 text-red-700", dot: "#ef4444" }; // 🔴
   if (a.includes("password") || a.includes("reset"))
     return { badge: "bg-orange-100 text-orange-700", dot: "#f97316" }; // 🟠
   if (a.includes("return") || a.includes("script"))
     return { badge: "bg-purple-100 text-purple-700", dot: "#a855f7" }; // 🟣
   if (a.includes("update") || a.includes("edit") || a.includes("modify"))
-    return { badge: "bg-blue-100 text-blue-700",   dot: "#3b82f6" }; // 🔵
+    return { badge: "bg-blue-100 text-blue-700", dot: "#3b82f6" }; // 🔵
   if (a.includes("create") || a.includes("add") || a.includes("register"))
-    return { badge: "bg-green-100 text-green-700",  dot: "#22c55e" }; // 🟢
-  return { badge: "bg-gray-100 text-gray-600",     dot: "#9ca3af" }; // ⚪
+    return { badge: "bg-green-100 text-green-700", dot: "#22c55e" }; // 🟢
+  return { badge: "bg-gray-100 text-gray-600", dot: "#9ca3af" }; // ⚪
 }
 
 // ─── Export helpers ────────────────────────────────────────────────────────
@@ -636,11 +635,10 @@ function AuditLogs() {
                           <button
                             key={n}
                             onClick={() => setPage(n)}
-                            className={`min-w-[36px] rounded-lg border px-3 py-1.5 text-sm font-medium transition-all ${
-                              n === safePage
+                            className={`min-w-[36px] rounded-lg border px-3 py-1.5 text-sm font-medium transition-all ${n === safePage
                                 ? "border-blue-600 bg-blue-600 text-white shadow-sm"
                                 : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                            }`}
+                              }`}
                           >
                             {n}
                           </button>

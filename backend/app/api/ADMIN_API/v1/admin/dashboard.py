@@ -40,6 +40,16 @@ def update_admin_profile(
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_admin),
 ):
+    if profile.email and profile.email != current_admin.email:
+        existing = db.query(User).filter(User.email == profile.email, User.id != current_admin.id).first()
+        if existing:
+            raise HTTPException(status_code=409, detail=f"Email address '{profile.email}' is already registered.")
+
+    if profile.phone and profile.phone != current_admin.phone:
+        existing = db.query(User).filter(User.phone == profile.phone, User.id != current_admin.id).first()
+        if existing:
+            raise HTTPException(status_code=409, detail=f"Phone number '{profile.phone}' is already registered.")
+
     current_admin.name = profile.name
     current_admin.email = profile.email
     current_admin.phone = profile.phone
@@ -65,7 +75,10 @@ def change_admin_password(
     current_admin: User = Depends(require_admin),
 ):
     if not verify_password(data.old_password, current_admin.password_hash):
-        raise HTTPException(status_code=400, detail="Incorrect old password")
+        raise HTTPException(status_code=400, detail="Incorrect old password.")
+
+    if verify_password(data.new_password, current_admin.password_hash):
+        raise HTTPException(status_code=400, detail="New password cannot be the same as the existing password.")
     
     current_admin.password_hash = hash_password(data.new_password)
     db.commit()

@@ -14,7 +14,7 @@ class UpdateExaminerRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
     phone: str = Field(..., min_length=10, max_length=15)
-    is_active: bool
+    is_active: bool = True
     
     
 class ExaminerResponse(BaseModel):

@@ -122,48 +122,31 @@ overflow:auto;
 
 }
 
-table{
-
-width:100%;
-
-border-collapse:collapse;
-
+.report-page table {
+  width: 100%;
+  border-collapse: collapse;
 }
 
-thead{
-
-background:#0d47a1;
-
-color:white;
-
+.report-page thead {
+  background: #0d47a1;
+  color: white;
 }
 
-th{
-
-padding:15px;
-
-font-size:15px;
-
+.report-page th {
+  padding: 15px;
+  font-size: 15px;
 }
 
-td{
-
-padding:15px;
-
-border-bottom:1px solid #eee;
-
+.report-page td {
+  padding: 15px;
+  border-bottom: 1px solid #eee;
 }
 
-tbody tr:hover{
-
-background:#f8fbff;
-
+.report-page tbody tr:hover {
+  background: #f8fbff;
 }
 
-tfoot{
-
-background:#edf4ff;
-
-font-weight:bold;
-
+.report-page tfoot {
+  background: #edf4ff;
+  font-weight: bold;
 }

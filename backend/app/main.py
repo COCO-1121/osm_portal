@@ -8,15 +8,15 @@ from app.core.config import settings
 from app.db.session import admin_engine, examiner_engine, uploader_engine
 
 # Import API Routers
-from app.api.auth import router as auth_router
-from app.api.v1.admin.dashboard import router as admin_dashboard_router
-from app.api.v1.admin.audit_logs import router as admin_audit_logs_router
-from app.api.v1.admin.examiners import router as admin_examiners_router
-from app.api.v1.admin.rejections import router as admin_rejections_router
+from app.api.ADMIN_API.auth import router as auth_router
+from app.api.ADMIN_API.v1.admin.dashboard import router as admin_dashboard_router
+from app.api.ADMIN_API.v1.admin.audit_logs import router as admin_audit_logs_router
+from app.api.ADMIN_API.v1.admin.examiners import router as admin_examiners_router
+from app.api.ADMIN_API.v1.admin.rejections import router as admin_rejections_router
 
 # Examiner Routers
 try:
-    from app.api.v1.examiner.auth import router as examiner_auth_router
+    from app.api.ADMIN_API.v1.examiner.auth import router as examiner_auth_router
 except ImportError as e:
     print("FAILED TO IMPORT EXAMINER AUTH ROUTER:", e)
     examiner_auth_router = None
@@ -25,18 +25,18 @@ print("Loaded examiner_auth_router:", examiner_auth_router is not None)
 
 # Import dashboard router
 try:
-    from app.api.v1.examiner.dashboard import router as examiner_dashboard_router
+    from app.api.ADMIN_API.v1.examiner.dashboard import router as examiner_dashboard_router
 except ImportError as e:
     print("FAILED TO IMPORT EXAMINER DASHBOARD ROUTER:", e)
     examiner_dashboard_router = None
 
 # Uploader Routers
 try:
-    from app.api.v1.uploader.auth import router as uploader_auth_router
-    from app.api.v1.uploader.scanned_documents import router as uploader_scanned_router
-    from app.api.v1.uploader.uploader import router as uploader_mgmt_router
-    from app.api.v1.uploader.exams import router as uploader_exams_router
-    from app.api.v1.uploader.rejected_queue import router as uploader_rejected_router
+    from app.api.ADMIN_API.v1.uploader.auth import router as uploader_auth_router
+    from app.api.ADMIN_API.v1.uploader.scanned_documents import router as uploader_scanned_router
+    from app.api.ADMIN_API.v1.uploader.uploader import router as uploader_mgmt_router
+    from app.api.ADMIN_API.v1.uploader.exams import router as uploader_exams_router
+    from app.api.ADMIN_API.v1.uploader.rejected_queue import router as uploader_rejected_router
 except ImportError as e:
     print("FAILED TO IMPORT UPLOADER ROUTERS:", e)
     uploader_auth_router = None
@@ -47,7 +47,7 @@ except ImportError as e:
 
 # Physical Scan Router
 try:
-    from app.api.routes.scan import router as scan_router
+    from app.api.ADMIN_API.routes.scan import router as scan_router
 except ImportError as e:
     print("FAILED TO IMPORT SCAN ROUTER:", e)
     scan_router = None
@@ -215,6 +215,14 @@ def startup_event():
         logger.info("Database seeding completed successfully.")
     except Exception as e:
         logger.error(f"Failed to seed database: {str(e)}")
+
+    # Seed sample rejected scripts
+    try:
+        from app.db.seed_rejection_test import seed_test_rejection
+        seed_test_rejection()
+        logger.info("Sample rejections seeded successfully.")
+    except Exception as e:
+        logger.error(f"Failed to seed sample rejections: {str(e)}")
 
     # Run barcode fix & exam seeding
     fix_old_pending_records()

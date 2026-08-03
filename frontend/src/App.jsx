@@ -13,7 +13,7 @@ import AdminProfile from './admin/pages/AdminProfile';
 import AuditLogs from './admin/pages/AuditLogs';
 import CreateExaminer from './admin/pages/CreateExaminer';
 import ExaminerManagement from './admin/pages/ExaminerManagement';
-import RejectedQueue from './admin/pages/RejectedQueue';
+import RejectedScripts from './admin/pages/RejectedScripts';
 import RejectedScriptReview from './admin/pages/RejectedScriptReview';
 import CredentialManagement from './admin/pages/CredentialManagement';
 
@@ -33,6 +33,7 @@ import UploaderLoginPage from './uploader/pages/UploaderLoginPage';
 import UploaderDashboardPage from './uploader/pages/UploaderDashboardPage';
 import UploadedCopies from './uploader/pages/UploadedCopies';
 import PreviewPage from './uploader/pages/PreviewPage';
+import RejectedQueue from './uploader/pages/RejectedQueue';
 
 import AdminProtectedRoute from './admin/components/AdminProtectedRoute';
 
@@ -57,12 +58,12 @@ function App() {
           <Route path="/admin/audit-logs" element={<AuditLogs />} />
           <Route path="/admin/create-examiner" element={<CreateExaminer />} />
           <Route path="/admin/examiners" element={<ExaminerManagement />} />
-          <Route path="/admin/rejected-queue" element={<RejectedQueue />} />
+
           <Route path="/admin/rejected-review" element={<RejectedScriptReview />} />
           <Route path="/admin/rejected-review/:rejectionId" element={<RejectedScriptReview />} />
           <Route path="/admin/credentials" element={<CredentialManagement />} />
           <Route path="/admin/credential-management" element={<CredentialManagement />} />
-          <Route path="/admin/rejected-scripts" element={<RejectedQueue />} />
+          <Route path="/admin/rejected-scripts" element={<RejectedScripts />} />
         </Route>
 
         {/* ================= EXAMINER ROUTES WITH DASHBOARD LAYOUT ================= */}
@@ -100,6 +101,7 @@ function App() {
         <Route path="/uploader/uploaded-copies" element={<UploadedCopies />} />
         <Route path="/uploader/preview" element={<PreviewPage />} />
         <Route path="/uploader/preview/:docId" element={<PreviewPage />} />
+        <Route path="/uploader/rejected-queue" element={<RejectedQueue />} />
 
         {/* Shared / Legacy Route Aliases */}
         <Route path="/rejected-queue" element={<RejectedQueue />} />

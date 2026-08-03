@@ -45,49 +45,26 @@ def create_examiner(
     print("=" * 50 + "\n")
 
     # -----------------------------
-    # Check duplicate Login User ID in osm_examiner
+    # Check duplicate User ID, Email, Phone across both DBs
     # -----------------------------
-    existing = examiner_db.scalar(
-        select(User).where(
-            User.user_id == payload.user_id
-        )
-    )
+    for check_ssn in [examiner_db, db]:
+        if check_ssn.scalar(select(User).where(User.user_id == payload.user_id)):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Login User ID '{payload.user_id}' already exists.",
+            )
 
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Login User ID already exists.",
-        )
+        if check_ssn.scalar(select(User).where(User.email == payload.email)):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Email address '{payload.email}' already exists.",
+            )
 
-    # -----------------------------
-    # Check duplicate Email in osm_examiner
-    # -----------------------------
-    existing = examiner_db.scalar(
-        select(User).where(
-            User.email == payload.email
-        )
-    )
-
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already exists.",
-        )
-
-    # -----------------------------
-    # Check duplicate Phone in osm_examiner
-    # -----------------------------
-    existing = examiner_db.scalar(
-        select(User).where(
-            User.phone == payload.phone
-        )
-    )
-
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Phone number already exists.",
-        )
+        if check_ssn.scalar(select(User).where(User.phone == payload.phone)):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Phone number '{payload.phone}' already exists.",
+            )
 
     # -----------------------------
     # Get EXAMINER role from both DBs
@@ -131,7 +108,7 @@ def create_examiner(
         institute_id=examiner_institute_id,
         password_hash=hashed_pwd,
         role_id=examiner_role.id,
-        managed_by_admin_id=current_admin.id,
+        managed_by_admin_id=None,
         is_active=True,
     )
 
@@ -187,30 +164,39 @@ def create_examiner(
     response_model=list[ExaminerResponse],
 )
 def get_examiners(
+    db: Session = Depends(get_db),
     examiner_db: Session = Depends(get_examiner_db),
     current_admin: User = Depends(require_admin),
 ):
-    examiner_role = examiner_db.scalar(
+    admin_examiner_role = db.scalar(
         select(Role).where(
             Role.name == "EXAMINER"
         )
     )
 
-    if examiner_role is None:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="EXAMINER role not found.",
+    if admin_examiner_role:
+        examiners = (
+            db.query(User)
+            .filter(
+                User.role_id == admin_examiner_role.id,
+                User.managed_by_admin_id == current_admin.id,
+            )
+            .order_by(User.user_id)
+            .all()
         )
-
-    examiners = (
-        examiner_db.query(User)
-        .filter(
-            User.role_id == examiner_role.id,
-            User.managed_by_admin_id == current_admin.id,
+    else:
+        examiner_role = examiner_db.scalar(select(Role).where(Role.name == "EXAMINER"))
+        if examiner_role is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="EXAMINER role not found.",
+            )
+        examiners = (
+            examiner_db.query(User)
+            .filter(User.role_id == examiner_role.id)
+            .order_by(User.user_id)
+            .all()
         )
-        .order_by(User.user_id)
-        .all()
-    )
 
     return [
         ExaminerResponse(
@@ -231,38 +217,18 @@ def get_examiners(
 )
 def get_examiner_by_id(
     examiner_id: str,
+    db: Session = Depends(get_db),
     examiner_db: Session = Depends(get_examiner_db),
     current_admin: User = Depends(require_admin),
 ):
-    examiner = examiner_db.scalar(
-        select(User).where(
-            User.id == examiner_id
-        )
-    )
+    examiner = db.scalar(select(User).where(User.id == examiner_id))
+    if examiner is None:
+        examiner = examiner_db.scalar(select(User).where(User.id == examiner_id))
 
     if examiner is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Examiner not found.",
-        )
-
-    examiner_role = examiner_db.scalar(
-        select(Role).where(
-            Role.name == "EXAMINER"
-        )
-    )
-
-    if examiner.role_id != examiner_role.id:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Examiner not found.",
-        )
-
-    # Security check
-    if examiner.managed_by_admin_id != current_admin.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to access this examiner.",
         )
 
     return ExaminerResponse(
@@ -282,92 +248,85 @@ def get_examiner_by_id(
 def update_examiner(
     examiner_id: str,
     payload: UpdateExaminerRequest,
+    db: Session = Depends(get_db),
     examiner_db: Session = Depends(get_examiner_db),
     current_admin: User = Depends(require_admin),
 ):
-    examiner = examiner_db.scalar(
-        select(User).where(
-            User.id == examiner_id
-        )
-    )
+    admin_rec = db.scalar(select(User).where(User.id == examiner_id))
+    exam_rec = examiner_db.scalar(select(User).where(User.id == examiner_id))
 
-    if examiner is None:
+    if admin_rec is None and exam_rec is None:
+        admin_rec = db.scalar(select(User).where(User.user_id == payload.user_id))
+        exam_rec = examiner_db.scalar(select(User).where(User.user_id == payload.user_id))
+
+    if admin_rec is None and exam_rec is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Examiner not found.",
         )
 
-    if examiner.managed_by_admin_id != current_admin.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to update this examiner.",
-        )
+    target_ids = [u.id for u in [admin_rec, exam_rec] if u]
 
-    # -----------------------------
-    # Duplicate Login User ID
-    # -----------------------------
-    existing = examiner_db.scalar(
-        select(User).where(
-            User.user_id == payload.user_id,
-            User.id != examiner.id,
-        )
-    )
+    # Check duplicates in examiner_db and admin db
+    for check_ssn in [examiner_db, db]:
+        if check_ssn:
+            if payload.user_id:
+                existing = check_ssn.scalar(
+                    select(User).where(
+                        User.user_id == payload.user_id,
+                        User.id.not_in(target_ids) if target_ids else True,
+                    )
+                )
+                if existing and (existing.user_id != (admin_rec or exam_rec).user_id):
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=f"Login User ID '{payload.user_id}' already exists.",
+                    )
 
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Login User ID already exists.",
-        )
+            if payload.email:
+                existing = check_ssn.scalar(
+                    select(User).where(
+                        User.email == payload.email,
+                        User.id.not_in(target_ids) if target_ids else True,
+                    )
+                )
+                if existing and existing.id not in target_ids:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=f"Email address '{payload.email}' already exists.",
+                    )
 
-    # -----------------------------
-    # Duplicate Email
-    # -----------------------------
-    existing = examiner_db.scalar(
-        select(User).where(
-            User.email == payload.email,
-            User.id != examiner.id,
-        )
-    )
+            if payload.phone:
+                existing = check_ssn.scalar(
+                    select(User).where(
+                        User.phone == payload.phone,
+                        User.id.not_in(target_ids) if target_ids else True,
+                    )
+                )
+                if existing and existing.id not in target_ids:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail=f"Phone number '{payload.phone}' already exists.",
+                    )
 
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already exists.",
-        )
+    for rec, ssn in [(admin_rec, db), (exam_rec, examiner_db)]:
+        if rec and ssn:
+            rec.user_id = payload.user_id
+            rec.name = payload.name
+            rec.email = payload.email
+            rec.phone = payload.phone
+            rec.is_active = payload.is_active
+            ssn.commit()
 
-    # -----------------------------
-    # Duplicate Phone
-    # -----------------------------
-    existing = examiner_db.scalar(
-        select(User).where(
-            User.phone == payload.phone,
-            User.id != examiner.id,
-        )
-    )
-
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Phone number already exists.",
-        )
-
-    examiner.user_id = payload.user_id
-    examiner.name = payload.name
-    examiner.email = payload.email
-    examiner.phone = payload.phone
-    examiner.is_active = payload.is_active
-
-    examiner_db.commit()
-    examiner_db.refresh(examiner)
-
+    target_rec = admin_rec or exam_rec
     return ExaminerResponse(
-        id=str(examiner.id),
-        user_id=examiner.user_id,
-        name=examiner.name,
-        email=examiner.email,
-        phone=examiner.phone,
-        institute_id=examiner.institute_id,
-        is_active=examiner.is_active,
+        id=str(target_rec.id),
+        user_id=target_rec.user_id,
+        name=target_rec.name,
+        email=target_rec.email,
+        phone=target_rec.phone,
+        institute_id=target_rec.institute_id,
+        is_active=target_rec.is_active,
     )
     
 @router.put(
@@ -381,36 +340,39 @@ def reset_examiner_password(
     examiner_db: Session = Depends(get_examiner_db),
     current_admin: User = Depends(require_admin),
 ):
-    examiner = examiner_db.scalar(
-        select(User).where(
-            User.id == examiner_id
-        )
-    )
+    admin_rec = db.scalar(select(User).where(User.id == examiner_id))
+    exam_rec = examiner_db.scalar(select(User).where(User.id == examiner_id))
 
-    if examiner is None:
+    if admin_rec is None and exam_rec is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Examiner not found.",
         )
 
-    if examiner.managed_by_admin_id != current_admin.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to reset this examiner's password.",
-        )
+    target_rec = admin_rec or exam_rec
+    if target_rec and target_rec.password_hash:
+        from app.core.security import verify_password
+        if verify_password(payload.password, target_rec.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="New password cannot be the same as the existing password.",
+            )
 
-    examiner.password_hash = hash_password(
-        payload.password
-    )
+    new_pwd_hash = hash_password(payload.password)
 
-    examiner_db.commit()
+    if admin_rec:
+        admin_rec.password_hash = new_pwd_hash
+        db.commit()
+    if exam_rec:
+        exam_rec.password_hash = new_pwd_hash
+        examiner_db.commit()
 
-    # Log the action
+    target_user_id = (admin_rec or exam_rec).user_id
     create_audit_log(
         db=db,
         admin=current_admin,
         action="Password Reset",
-        target=examiner.user_id,
+        target=target_user_id,
     )
 
     return {
@@ -428,44 +390,39 @@ def update_examiner_status(
     examiner_db: Session = Depends(get_examiner_db),
     current_admin: User = Depends(require_admin),
 ):
-    examiner = examiner_db.scalar(
-        select(User).where(
-            User.id == examiner_id
-        )
-    )
+    admin_rec = db.scalar(select(User).where(User.id == examiner_id))
+    exam_rec = examiner_db.scalar(select(User).where(User.id == examiner_id))
 
-    if examiner is None:
+    if admin_rec is None and exam_rec is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Examiner not found.",
         )
 
-    if examiner.managed_by_admin_id != current_admin.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You are not authorized to update this examiner.",
-        )
+    if admin_rec:
+        admin_rec.is_active = payload.is_active
+        db.commit()
+        db.refresh(admin_rec)
+    if exam_rec:
+        exam_rec.is_active = payload.is_active
+        examiner_db.commit()
+        examiner_db.refresh(exam_rec)
 
-    examiner.is_active = payload.is_active
-
-    examiner_db.commit()
-    examiner_db.refresh(examiner)
-
-    # Log the action
+    target_rec = admin_rec or exam_rec
     action = "Activated Examiner" if payload.is_active else "Deactivated Examiner"
     create_audit_log(
         db=db,
         admin=current_admin,
         action=action,
-        target=examiner.user_id,
+        target=target_rec.user_id,
     )
 
     return ExaminerResponse(
-        id=str(examiner.id),
-        user_id=examiner.user_id,
-        name=examiner.name,
-        email=examiner.email,
-        phone=examiner.phone,
-        institute_id=examiner.institute_id,
-        is_active=examiner.is_active,
+        id=str(target_rec.id),
+        user_id=target_rec.user_id,
+        name=target_rec.name,
+        email=target_rec.email,
+        phone=target_rec.phone,
+        institute_id=target_rec.institute_id,
+        is_active=target_rec.is_active,
     )

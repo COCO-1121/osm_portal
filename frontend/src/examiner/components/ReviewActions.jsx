@@ -1,58 +1,80 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  FaCheckCircle,
-  FaUserEdit,
-  FaRandom,
-  FaChevronDown,
-  FaChevronUp,
-} from "react-icons/fa";
+import { FaCheckCircle } from "react-icons/fa";
 
-function ReviewActions() {
+const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+function ReviewActions({ rejectionId }) {
   const navigate = useNavigate();
 
   // Main decision: "examiner" | "uploader" | ""
   const [decision, setDecision] = useState("");
-
-  // Examiner queue sub-options
-  const [assignDifferent, setAssignDifferent] = useState(false);
   const [additionalRemarks, setAdditionalRemarks] = useState("");
-
-  // Uploader path
   const [uploaderRemarks, setUploaderRemarks] = useState("");
-
-  // Accordion toggle for assignment policy
-  const [policyOpen, setPolicyOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const defaultMessages = [
     "All pages verified.",
     "Continue evaluation.",
   ];
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!decision) {
       alert("Please select a review decision.");
       return;
     }
 
-
     const summary =
       decision === "examiner"
-        ? assignDifferent
-          ? "Return to Examiner Queue — script will be placed in the pool and assigned to a new examiner."
-          : "Return to Examiner Queue — script will be returned to the original examiner."
+        ? "Return to Examiner Queue — script will be returned for continued evaluation."
         : "Return to Uploader — script will be sent back for re-upload.";
 
     const confirmed = window.confirm(`${summary}\n\nConfirm submission?`);
     if (!confirmed) return;
 
-    alert("Decision submitted successfully.");
-    navigate("/admin/rejected-scripts");
+    try {
+      setSubmitting(true);
+      const token = localStorage.getItem("access_token");
+
+      if (rejectionId && token) {
+        const payloadDecision =
+          decision === "examiner" ? "RETURN_TO_EXAMINER" : "RETURN_TO_UPLOADER";
+        const remarks =
+          decision === "examiner" ? additionalRemarks : uploaderRemarks;
+
+        const response = await fetch(
+          `${API_URL}/api/v1/admin/rejected-scripts/${rejectionId}/decision`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              decision: payloadDecision,
+              admin_remarks: remarks || undefined,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data.detail || "Failed to submit review decision.");
+        }
+      }
+
+      alert("Decision submitted successfully.");
+      navigate("/admin/rejected-scripts");
+    } catch (err) {
+      console.error("Submit decision error:", err);
+      alert(err.message || "Failed to submit decision.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow p-6">
-
       <h2 className="text-2xl font-bold text-gray-800 mb-1">Review Decision</h2>
       <p className="text-sm text-gray-500 mb-6">
         Select how this rejected script should be handled.
@@ -60,7 +82,6 @@ function ReviewActions() {
 
       {/* ── Decision Cards ─────────────────────────────────── */}
       <div className="space-y-3">
-
         {/* Option 1 — Return to Examiner Queue */}
         <label
           className={`flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition ${
@@ -71,6 +92,7 @@ function ReviewActions() {
         >
           <input
             type="radio"
+            name="reviewDecision"
             value="examiner"
             checked={decision === "examiner"}
             onChange={(e) => setDecision(e.target.value)}
@@ -96,6 +118,7 @@ function ReviewActions() {
         >
           <input
             type="radio"
+            name="reviewDecision"
             value="uploader"
             checked={decision === "uploader"}
             onChange={(e) => setDecision(e.target.value)}
@@ -108,13 +131,11 @@ function ReviewActions() {
             </p>
           </div>
         </label>
-
       </div>
 
       {/* ── Examiner Queue Panel ───────────────────────────────────── */}
       {decision === "examiner" && (
         <div className="mt-6 space-y-5">
-
           {/* Default verification messages */}
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">
@@ -147,108 +168,6 @@ function ReviewActions() {
               className="w-full mt-2 border border-gray-300 rounded-lg p-3 text-sm outline-none focus:border-blue-600 resize-none"
             />
           </div>
-
-          {/* Assignment section */}
-          <div>
-            <p className="text-sm font-semibold text-gray-700 mb-2">
-              Assignment Policy
-            </p>
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
-
-              {/* Default — same examiner */}
-              <div
-                className={`flex items-center gap-3 p-4 cursor-pointer transition ${
-                  !assignDifferent ? "bg-blue-50" : "bg-white hover:bg-gray-50"
-                }`}
-                onClick={() => setAssignDifferent(false)}
-              >
-                <FaUserEdit
-                  className={`text-lg flex-shrink-0 ${
-                    !assignDifferent ? "text-blue-600" : "text-gray-400"
-                  }`}
-                />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-800">
-                    Return to Original Examiner
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Script is reassigned to the same examiner by default.
-                  </p>
-                </div>
-                <input
-                  type="radio"
-                  checked={!assignDifferent}
-                  onChange={() => setAssignDifferent(false)}
-                  className="accent-blue-600"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-
-              <div className="border-t border-gray-200" />
-
-              {/* Assign different examiner */}
-              <div
-                className={`flex items-center gap-3 p-4 cursor-pointer transition ${
-                  assignDifferent ? "bg-indigo-50" : "bg-white hover:bg-gray-50"
-                }`}
-                onClick={() => setAssignDifferent(true)}
-              >
-                <FaRandom
-                  className={`text-lg flex-shrink-0 ${
-                    assignDifferent ? "text-indigo-600" : "text-gray-400"
-                  }`}
-                />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-gray-800">
-                    Assign Different Examiner
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Script enters the pool and is randomly assigned to a new examiner.
-                  </p>
-                </div>
-                <input
-                  type="radio"
-                  checked={assignDifferent}
-                  onChange={() => setAssignDifferent(true)}
-                  className="accent-indigo-600"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-
-              {/* Policy accordion */}
-              {assignDifferent && (
-                <div className="border-t border-indigo-100 bg-indigo-50">
-                  <button
-                    type="button"
-                    onClick={() => setPolicyOpen((o) => !o)}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-xs font-semibold text-indigo-700 hover:text-indigo-900 transition"
-                  >
-                    {policyOpen ? <FaChevronUp /> : <FaChevronDown />}
-                    Assignment Policy Details
-                  </button>
-                  {policyOpen && (
-                    <ul className="px-6 pb-4 text-xs text-indigo-800 space-y-1.5 list-disc">
-                      <li>
-                        The original examiner will{" "}
-                        <strong>not</strong> be reassigned this script.
-                      </li>
-                      <li>
-                        The script is placed into the examiner assignment pool.
-                      </li>
-                      <li>
-                        A new examiner is selected randomly by the
-                        system's assignment algorithm.
-                      </li>
-                      <li>
-                        This ensures workload balancing across available examiners.
-                      </li>
-                    </ul>
-                  )}
-                </div>
-              )}
-
-            </div>
-          </div>
         </div>
       )}
 
@@ -271,18 +190,18 @@ function ReviewActions() {
       {/* ── Submit ────────────────────────────────────────────────── */}
       <div className="flex justify-end mt-8">
         <button
+          type="button"
           onClick={handleSubmit}
-          disabled={!decision}
-          className={`px-8 py-3 rounded-lg font-semibold transition ${
-            decision
+          disabled={!decision || submitting}
+          className={`px-8 py-3 rounded-lg font-semibold transition cursor-pointer ${
+            decision && !submitting
               ? "bg-blue-700 hover:bg-blue-800 text-white shadow hover:shadow-md"
               : "bg-gray-200 text-gray-400 cursor-not-allowed"
           }`}
         >
-          Submit Decision
+          {submitting ? "Submitting..." : "Submit Decision"}
         </button>
       </div>
-
     </div>
   );
 }
