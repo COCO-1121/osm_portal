@@ -13,7 +13,7 @@ import AdminProfile from './admin/pages/AdminProfile';
 import AuditLogs from './admin/pages/AuditLogs';
 import CreateExaminer from './admin/pages/CreateExaminer';
 import ExaminerManagement from './admin/pages/ExaminerManagement';
-import RejectedQueue from './admin/pages/RejectedQueue';
+import AdminRejectedQueue from './admin/pages/RejectedQueue';
 import RejectedScriptReview from './admin/pages/RejectedScriptReview';
 import CredentialManagement from './admin/pages/CredentialManagement';
 
@@ -27,6 +27,7 @@ import DayWiseReport from './examiner/pages/DayWiseReport';
 import EvaluatorScriptReport from './examiner/pages/EvaluatorScriptReport';
 import MainAssessment from './examiner/pages/MainAssessment';
 import ExaminerRejectedScripts from './examiner/pages/ExaminerRejectedScripts';
+import ExaminerRejectedQueue from './examiner/pages/RejectedQueue';
 
 // Uploader Module Pages
 import UploaderLoginPage from './uploader/pages/UploaderLoginPage';
@@ -57,12 +58,12 @@ function App() {
           <Route path="/admin/audit-logs" element={<AuditLogs />} />
           <Route path="/admin/create-examiner" element={<CreateExaminer />} />
           <Route path="/admin/examiners" element={<ExaminerManagement />} />
-          <Route path="/admin/rejected-queue" element={<RejectedQueue />} />
+          <Route path="/admin/rejected-queue" element={<AdminRejectedQueue />} />
           <Route path="/admin/rejected-review" element={<RejectedScriptReview />} />
           <Route path="/admin/rejected-review/:rejectionId" element={<RejectedScriptReview />} />
           <Route path="/admin/credentials" element={<CredentialManagement />} />
           <Route path="/admin/credential-management" element={<CredentialManagement />} />
-          <Route path="/admin/rejected-scripts" element={<RejectedQueue />} />
+          <Route path="/admin/rejected-scripts" element={<AdminRejectedQueue />} />
         </Route>
 
         {/* ================= EXAMINER ROUTES WITH DASHBOARD LAYOUT ================= */}
@@ -75,6 +76,7 @@ function App() {
           <Route path="/examiner/evaluator-report" element={<EvaluatorScriptReport />} />
           <Route path="/examiner/assessment" element={<MainAssessment />} />
           <Route path="/examiner/rejected-scripts" element={<ExaminerRejectedScripts />} />
+          <Route path="/examiner/rejected-queue" element={<ExaminerRejectedQueue />} />
 
           {/* Legacy Examiner Route Aliases */}
           <Route path="/instruction" element={<InstructionPage />} />
@@ -102,7 +104,7 @@ function App() {
         <Route path="/uploader/preview/:docId" element={<PreviewPage />} />
 
         {/* Shared / Legacy Route Aliases */}
-        <Route path="/rejected-queue" element={<RejectedQueue />} />
+        <Route path="/rejected-queue" element={<ExaminerRejectedQueue />} />
 
         {/* Fallback to Role Selector */}
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -1,42 +1,50 @@
+import React, { useState, useEffect } from "react";
 import "./DayWiseReport.css";
 import { useNavigate } from "react-router-dom";
+
 function DayWiseReport() {
   const navigate = useNavigate();
 
-  const report = [
-    {
-      id: 1,
-      code: "0302",
-      subject: "ECONOMICS - Set 2",
-      date: "18-02-2026",
-      completed: 2,
-      rejected: 0,
-      ufm: 0,
-    },
-    {
-      id: 2,
-      code: "0302",
-      subject: "ECONOMICS - Set 2",
-      date: "17-02-2026",
-      completed: 1,
-      rejected: 0,
-      ufm: 0,
-    },
-    {
-      id: 3,
-      code: "0551",
-      subject: "ACCOUNTANCY - Set 1",
-      date: "16-02-2026",
-      completed: 0,
-      rejected: 0,
-      ufm: 0,
-    },
-  ];
+  const [report, setReport] = useState([]);
 
-  const totalCompleted = report.reduce(
-    (sum, item) => sum + item.completed,
-    0
-  );
+  useEffect(() => {
+    let dailyStats = JSON.parse(localStorage.getItem('daily_stats'));
+    
+    // Initialize if empty to keep default structure for demo
+    if (!dailyStats || Object.keys(dailyStats).length === 0) {
+      const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+      dailyStats = {
+        [`${today}_0899`]: {
+          subject: "MODERN PHYSICS",
+          completed: 1,
+          rejected: 0,
+          ufm: 0
+        }
+      };
+      localStorage.setItem('daily_stats', JSON.stringify(dailyStats));
+    }
+
+    // Convert object to array for table rendering
+    const reportData = Object.entries(dailyStats).map(([key, value], index) => {
+      const [date, code] = key.split('_');
+      return {
+        id: index + 1,
+        code,
+        subject: value.subject,
+        date,
+        completed: value.completed,
+        rejected: value.rejected,
+        ufm: value.ufm
+      };
+    });
+
+    reportData.reverse(); 
+    setReport(reportData);
+  }, []);
+
+  const totalCompleted = report.reduce((sum, item) => sum + item.completed, 0);
+  const totalRejected = report.reduce((sum, item) => sum + item.rejected, 0);
+  const totalUFM = report.reduce((sum, item) => sum + item.ufm, 0);
 
   return (
     <div className="report-page">
@@ -51,13 +59,13 @@ function DayWiseReport() {
         <div style={{ display: 'flex', gap: '10px' }}>
           <button 
             className="download-btn"
-            onClick={() => navigate('/script-report')}
+            onClick={() => navigate('/examiner/evaluator-report')}
             style={{ backgroundColor: '#0d6efd', color: 'white' }}
           >
-            View Report
+            View Script Report
           </button>
           
-          <button className="download-btn">
+          <button className="download-btn" onClick={() => alert("Downloading Excel Report...")}>
             Download Excel
           </button>
         </div>
@@ -68,7 +76,7 @@ function DayWiseReport() {
 
         <div className="card">
           <h3>Total Scripts</h3>
-          <span>3</span>
+          <span>{totalCompleted + totalRejected + totalUFM}</span>
         </div>
 
         <div className="card">
@@ -78,12 +86,12 @@ function DayWiseReport() {
 
         <div className="card">
           <h3>Rejected</h3>
-          <span>0</span>
+          <span>{totalRejected}</span>
         </div>
 
         <div className="card">
           <h3>UFM</h3>
-          <span>0</span>
+          <span>{totalUFM}</span>
         </div>
 
       </div>
@@ -138,9 +146,13 @@ function DayWiseReport() {
                 <strong>{totalCompleted}</strong>
               </td>
 
-              <td>0</td>
+              <td>
+                <strong>{totalRejected}</strong>
+              </td>
 
-              <td>0</td>
+              <td>
+                <strong>{totalUFM}</strong>
+              </td>
 
             </tr>
 
