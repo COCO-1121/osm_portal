@@ -155,10 +155,10 @@ function UploaderDashboardPage() {
 
   const messageColor =
     messageType === "success"
-      ? "text-green-600"
+      ? "#16a34a"
       : messageType === "error"
-      ? "text-red-500"
-      : "text-gray-500";
+      ? "#ef4444"
+      : "#6b7280";
 
   const examDropdownPlaceholder = !selectedDate
     ? "Select date first"
@@ -168,81 +168,160 @@ function UploaderDashboardPage() {
     ? "No exams on this date"
     : "Select Exam";
 
+  const examSelectDisabled = !selectedDate || examsLoading || exams.length === 0;
+
+  const navLinkStyle = (active) => ({
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "14px 16px",
+    borderRadius: "12px",
+    color: active ? "#111827" : "#4b5563",
+    background: active ? "#f3f4f6" : "transparent",
+    fontSize: "16px",
+    fontWeight: active ? 600 : 500,
+    cursor: "pointer",
+  });
+
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f9fafb" }}>
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col justify-between">
+      <aside
+        style={{
+          width: "288px",
+          background: "#ffffff",
+          borderRight: "1px solid #e5e7eb",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+        }}
+      >
         <div>
-          <div className="px-6 py-6">
-            <span className="text-2xl font-bold text-gray-900">OSM Portal</span>
+          <div style={{ padding: "24px" }}>
+            <span style={{ fontSize: "24px", fontWeight: 700, color: "#111827" }}>OSM Portal</span>
           </div>
 
-          <nav className="mt-2 flex flex-col gap-1 px-3">
-            <a className="flex items-center gap-3 px-3 py-3 rounded-lg bg-gray-100 text-gray-900 text-[15px] font-semibold cursor-pointer">
-              <FaHome className="text-[17px]" />
+          <nav style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "8px", padding: "0 16px" }}>
+            <a style={navLinkStyle(true)}>
+              <FaHome style={{ fontSize: "18px" }} />
               <span>Home</span>
             </a>
-            <a
-              onClick={() => navigate("/rejected-queue")}
-              className="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-600 hover:bg-gray-100 text-[15px] font-medium cursor-pointer"
-            >
-              <FaExclamationCircle className="text-[17px]" />
+            <a onClick={() => navigate("/rejected-queue")} style={navLinkStyle(false)}>
+              <FaExclamationCircle style={{ fontSize: "18px" }} />
               <span>Rejected Queue</span>
             </a>
-            <a
-              onClick={() => navigate("/uploader/uploaded-copies")}
-              className="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-600 hover:bg-gray-100 text-[15px] font-medium cursor-pointer"
-            >
-              <FaHistory className="text-[17px]" />
+            <a onClick={() => navigate("/uploader/uploaded-copies")} style={navLinkStyle(false)}>
+              <FaHistory style={{ fontSize: "18px" }} />
               <span>History</span>
             </a>
-            <a className="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-600 hover:bg-gray-100 text-[15px] font-medium cursor-pointer">
-              <FaQuestionCircle className="text-[17px]" />
+            <a style={navLinkStyle(false)}>
+              <FaQuestionCircle style={{ fontSize: "18px" }} />
               <span>Support</span>
             </a>
           </nav>
         </div>
 
-        <div className="px-3 pb-6">
-          <a
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-3 rounded-lg text-red-500 hover:bg-red-50 text-[15px] font-medium cursor-pointer"
-          >
-            <FaSignOutAlt className="text-[17px]" />
+        <div style={{ padding: "0 16px 24px" }}>
+          <a onClick={handleLogout} style={{ ...navLinkStyle(false), color: "#ef4444" }}>
+            <FaSignOutAlt style={{ fontSize: "18px" }} />
             <span>Logout</span>
           </a>
         </div>
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col">
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {/* Top bar */}
-        <header className="flex items-center justify-between bg-white border-b border-gray-200 px-8 py-5">
-          <h2 className="text-2xl font-bold text-gray-800">On-Screen Marking System</h2>
+        <header
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "#ffffff",
+            borderBottom: "1px solid #e5e7eb",
+            padding: "20px 32px",
+          }}
+        >
+          <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#1f2937", margin: 0 }}>
+            On-Screen Marking System
+          </h2>
 
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-semibold text-gray-800">Uploader</p>
-              <p className="text-xs text-gray-500">ID: 992831</p>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ textAlign: "right" }}>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "#1f2937", margin: 0 }}>Uploader</p>
+              <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>ID: 992831</p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
+            <div
+              style={{
+                width: "44px",
+                height: "44px",
+                borderRadius: "9999px",
+                background: "#2563eb",
+                color: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "14px",
+                fontWeight: 600,
+              }}
+            >
               UP
             </div>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="p-8 flex-1">
-          <div className="bg-white rounded-2xl border border-gray-200 p-10 max-w-4xl mx-auto mt-4 text-center">
-            <h1 className="text-4xl font-extrabold text-blue-700">Uploader</h1>
-            <p className="text-[15px] text-gray-500 mt-2 mb-8">
+        <main
+          style={{
+            padding: "24px 40px",
+            flex: 1,
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: "20px",
+              boxShadow: "0 10px 40px rgba(0,0,0,0.15)",
+              padding: "36px 48px",
+              maxWidth: "1024px",
+              width: "100%",
+              marginTop: "0px",
+              textAlign: "center",
+            }}
+          >
+            <h1 style={{ fontSize: "40px", fontWeight: 800, color: "#1d4ed8", margin: 0 }}>
+              Uploader
+            </h1>
+            <p style={{ fontSize: "16px", color: "#6b7280", marginTop: "8px", marginBottom: "24px" }}>
               Manage scanned answer sheets and upload them securely.
             </p>
 
-            <div className="grid grid-cols-3 gap-4 mb-10">
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: "20px",
+                marginBottom: "28px",
+              }}
+            >
               <button
                 onClick={() => navigate("/rejected-queue")}
-                className="flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-900 text-white font-semibold py-3.5 rounded-lg text-[15px]"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  background: "#1e40af",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  padding: "16px",
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  border: "none",
+                  cursor: "pointer",
+                }}
               >
                 <FaExclamationCircle />
                 <span>Rejected Queue</span>
@@ -250,7 +329,20 @@ function UploaderDashboardPage() {
 
               <button
                 onClick={() => navigate("/uploader/preview")}
-                className="flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-900 text-white font-semibold py-3.5 rounded-lg text-[15px]"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  background: "#1e40af",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  padding: "16px",
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  border: "none",
+                  cursor: "pointer",
+                }}
               >
                 <FaEye />
                 <span>View Scanned Copy</span>
@@ -258,40 +350,99 @@ function UploaderDashboardPage() {
 
               <button
                 onClick={() => navigate("/uploader/uploaded-copies")}
-                className="flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-900 text-white font-semibold py-3.5 rounded-lg text-[15px]"
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  background: "#1e40af",
+                  color: "#ffffff",
+                  fontWeight: 600,
+                  padding: "16px",
+                  borderRadius: "8px",
+                  fontSize: "16px",
+                  border: "none",
+                  cursor: "pointer",
+                }}
               >
                 <FaFileAlt />
                 <span>View Uploaded Copies</span>
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-8 text-left mb-8">
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "24px",
+                textAlign: "left",
+                marginBottom: "24px",
+              }}
+            >
               <div>
-                <label className="text-[15px] font-medium text-gray-700 block mb-2">
+                <label style={{ fontSize: "15px", fontWeight: 500, color: "#374151", display: "block", marginBottom: "8px" }}>
                   Select Date
                 </label>
-                <div className="relative flex items-center gap-2 border border-gray-300 rounded-lg px-3.5 py-2.5">
-                  <FaCalendarAlt className="text-blue-700 shrink-0" />
+                <div
+                  style={{
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "8px",
+                    padding: "10px 14px",
+                  }}
+                >
+                  <FaCalendarAlt style={{ color: "#1d4ed8", flexShrink: 0 }} />
                   <input
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full text-[15px] text-gray-500 outline-none bg-transparent"
+                    style={{
+                      width: "100%",
+                      fontSize: "15px",
+                      color: "#6b7280",
+                      outline: "none",
+                      background: "transparent",
+                      border: "none",
+                    }}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[15px] font-medium text-gray-700 block mb-2">
+                <label style={{ fontSize: "15px", fontWeight: 500, color: "#374151", display: "block", marginBottom: "8px" }}>
                   Select Exam
                 </label>
-                <div className="relative flex items-center gap-2 border border-gray-300 rounded-lg px-3.5 py-2.5">
-                  <FaGraduationCap className="text-blue-700 shrink-0" />
+                <div
+                  style={{
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "8px",
+                    padding: "10px 14px",
+                    opacity: examSelectDisabled ? 0.7 : 1,
+                  }}
+                >
+                  <FaGraduationCap style={{ color: "#1d4ed8", flexShrink: 0 }} />
                   <select
                     value={selectedExam}
                     onChange={(e) => setSelectedExam(e.target.value)}
-                    disabled={!selectedDate || examsLoading || exams.length === 0}
-                    className="w-full appearance-none text-[15px] text-gray-500 outline-none bg-transparent pr-6 disabled:cursor-not-allowed"
+                    disabled={examSelectDisabled}
+                    style={{
+                      width: "100%",
+                      appearance: "none",
+                      fontSize: "15px",
+                      color: "#6b7280",
+                      outline: "none",
+                      background: "transparent",
+                      border: "none",
+                      paddingRight: "24px",
+                      cursor: examSelectDisabled ? "not-allowed" : "pointer",
+                    }}
                   >
                     <option value="">{examDropdownPlaceholder}</option>
                     {exams.map((exam) => (
@@ -300,7 +451,15 @@ function UploaderDashboardPage() {
                       </option>
                     ))}
                   </select>
-                  <FaChevronDown className="absolute right-3.5 text-gray-400 text-xs pointer-events-none" />
+                  <FaChevronDown
+                    style={{
+                      position: "absolute",
+                      right: "14px",
+                      color: "#9ca3af",
+                      fontSize: "12px",
+                      pointerEvents: "none",
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -311,20 +470,36 @@ function UploaderDashboardPage() {
               ref={fileInputRef}
               accept="application/pdf"
               onChange={handleFileSelected}
-              className="hidden"
+              style={{ display: "none" }}
             />
 
             <button
               onClick={handleUploadClick}
               disabled={uploading}
-              className="flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-900 disabled:opacity-60 text-white font-semibold py-3.5 px-10 rounded-lg text-[15px] mx-auto"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                background: uploading ? "#93c5fd" : "#1e40af",
+                color: "#ffffff",
+                fontWeight: 600,
+                padding: "16px 48px",
+                borderRadius: "8px",
+                fontSize: "16px",
+                border: "none",
+                cursor: uploading ? "not-allowed" : "pointer",
+                margin: "0 auto",
+              }}
             >
               <FaCloudUploadAlt />
               <span>{uploadButtonLabel}</span>
             </button>
 
             {message ? (
-              <p className={"text-sm mt-4 " + messageColor}>{message}</p>
+              <p style={{ fontSize: "14px", marginTop: "16px", color: messageColor }}>
+                {message}
+              </p>
             ) : null}
           </div>
         </main>

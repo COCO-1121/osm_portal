@@ -33,6 +33,7 @@ import UploaderLoginPage from './uploader/pages/UploaderLoginPage';
 import UploaderDashboardPage from './uploader/pages/UploaderDashboardPage';
 import UploadedCopies from './uploader/pages/UploadedCopies';
 import PreviewPage from './uploader/pages/PreviewPage';
+import UploaderRejectedQueue from './uploader/pages/RejectedQueue';
 
 import AdminProtectedRoute from './admin/components/AdminProtectedRoute';
 
@@ -102,7 +103,7 @@ function App() {
         <Route path="/uploader/preview/:docId" element={<PreviewPage />} />
 
         {/* Shared / Legacy Route Aliases */}
-        <Route path="/rejected-queue" element={<RejectedQueue />} />
+        <Route path="/rejected-queue" element={<UploaderRejectedQueue />} />
 
         {/* Fallback to Role Selector */}
         <Route path="*" element={<Navigate to="/" replace />} />
