@@ -10,6 +10,15 @@ const getHeaders = () => {
   };
 };
 
+const formatErrorMessage = (data, defaultMsg) => {
+  if (!data || !data.detail) return defaultMsg;
+  if (typeof data.detail === "string") return data.detail;
+  if (Array.isArray(data.detail)) {
+    return data.detail.map((err) => `${err.loc ? err.loc.join(".") + ": " : ""}${err.msg}`).join("; ");
+  }
+  return JSON.stringify(data.detail);
+};
+
 export async function getAllExaminers() {
   const response = await fetch(API_URL, {
     headers: getHeaders(),
@@ -18,7 +27,7 @@ export async function getAllExaminers() {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.detail || "Failed to fetch examiners.");
+    throw new Error(formatErrorMessage(data, "Failed to fetch examiners."));
   }
 
   return data;
@@ -32,7 +41,7 @@ export async function getExaminer(id) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.detail || "Failed to fetch examiner.");
+    throw new Error(formatErrorMessage(data, "Failed to fetch examiner."));
   }
 
   return data;
@@ -48,7 +57,7 @@ export async function createExaminer(payload) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.detail || "Failed to create examiner.");
+    throw new Error(formatErrorMessage(data, "Failed to create examiner."));
   }
 
   return data;
@@ -64,7 +73,7 @@ export async function updateExaminer(id, payload) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.detail || "Failed to update examiner.");
+    throw new Error(formatErrorMessage(data, "Failed to update examiner."));
   }
 
   return data;
@@ -82,7 +91,7 @@ export async function resetPassword(id, password) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.detail || "Password reset failed.");
+    throw new Error(formatErrorMessage(data, "Password reset failed."));
   }
 
   return data;
@@ -100,7 +109,7 @@ export async function changeStatus(id, is_active) {
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.detail || "Status update failed.");
+    throw new Error(formatErrorMessage(data, "Status update failed."));
   }
 
   return data;

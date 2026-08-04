@@ -92,63 +92,42 @@ function AdminDashboard() {
 
   return (
     <AdminLayout title="Dashboard">
-
-      {/* Dashboard Statistics */}
-      <div className="grid grid-cols-4 gap-6">
-
-        <StatsCard
-          title="Rejected Today"
-          value={
-            loading
-              ? "..."
-              : stats.rejected_today
-          }
-        />
-
-        <StatsCard
-          title="Pending Review"
-          value={
-            loading
-              ? "..."
-              : stats.pending_review
-          }
-        />
-
-        <StatsCard
-          title="Returned to Uploader"
-          value={
-            loading
-              ? "..."
-              : stats.returned_to_uploader
-          }
-        />
-
-        <StatsCard
-          title="Returned to Examiner"
-          value={
-            loading
-              ? "..."
-              : stats.returned_to_examiner
-          }
-        />
-
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="mt-6 bg-red-50 text-red-700 p-4 rounded-lg">
-          {error}
+      <div className="space-y-6">
+        {/* Dashboard Statistics */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <StatsCard
+            title="Rejected Today"
+            value={loading ? "..." : stats.rejected_today}
+          />
+          <StatsCard
+            title="Pending Review"
+            value={loading ? "..." : stats.pending_review}
+          />
+          <StatsCard
+            title="Returned to Uploader"
+            value={loading ? "..." : stats.returned_to_uploader}
+          />
+          <StatsCard
+            title="Returned to Examiner"
+            value={loading ? "..." : stats.returned_to_examiner}
+          />
         </div>
-      )}
 
-      {/* Rejected Scripts Table */}
-      {!error && (
-        <RejectedTable
-          scripts={scripts}
-          loading={loading}
-        />
-      )}
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm font-medium">
+            {error}
+          </div>
+        )}
 
+        {/* Rejected Scripts Table */}
+        {!error && (
+          <RejectedTable
+            scripts={scripts}
+            loading={loading}
+          />
+        )}
+      </div>
     </AdminLayout>
   );
 }

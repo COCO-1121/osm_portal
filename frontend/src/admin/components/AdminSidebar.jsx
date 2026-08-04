@@ -19,33 +19,30 @@ function AdminSidebar() {
     );
 
     if (confirmLogout) {
-      // Clear admin authentication data
       localStorage.removeItem("access_token");
       localStorage.removeItem("token_type");
       localStorage.removeItem("admin_user");
-
-      // Redirect to admin login
       navigate("/admin/login", { replace: true });
     }
   };
 
   return (
-    <aside className="w-64 h-full bg-white border-r border-gray-200">
+    <aside className="w-64 h-full bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
       {/* Admin Panel Heading */}
-      <div className="p-6 border-b">
-        <h2 className="text-2xl font-bold text-blue-700">
+      <div className="h-16 px-6 border-b border-gray-200 flex items-center">
+        <h2 className="text-xl font-bold text-blue-600 tracking-tight">
           Admin Panel
         </h2>
       </div>
 
       {/* Navigation */}
-      <nav className="mt-6">
+      <nav className="p-3 space-y-1 overflow-y-auto flex-1">
         {/* Home */}
         <div
           onClick={() => navigate("/")}
-          className="w-full flex items-center gap-3 px-6 py-4 hover:bg-gray-100 transition text-left text-gray-700 cursor-pointer bg-transparent border-none"
+          className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition text-left text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer font-medium text-sm"
         >
-          <FaHome />
+          <FaHome className="text-gray-400 text-base flex-shrink-0" />
           <span>Home</span>
         </div>
 
@@ -53,82 +50,83 @@ function AdminSidebar() {
         <NavLink
           to="/admin/dashboard"
           className={({ isActive }) =>
-            `flex items-center gap-3 px-6 py-4 no-underline transition ${
+            `flex items-center gap-3 px-3.5 py-2.5 rounded-xl no-underline transition text-sm font-medium ${
               isActive
-                ? "text-blue-700 bg-blue-50 border-r-4 border-blue-700 font-medium"
-                : "hover:bg-gray-100 text-gray-700"
+                ? "text-blue-600 bg-blue-50 font-semibold"
+                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
             }`
           }
         >
-          <FaChartPie />
+          <FaChartPie className="text-base flex-shrink-0" />
           <span>Dashboard</span>
         </NavLink>
 
         {/* Rejected Scripts */}
         <NavLink
-          to="/admin/rejected-queue"
+          to="/admin/rejected-scripts"
           className={({ isActive }) =>
-            `flex items-center gap-3 px-6 py-4 no-underline transition ${
+            `flex items-center gap-3 px-3.5 py-2.5 rounded-xl no-underline transition text-sm font-medium ${
               isActive
-                ? "text-blue-700 bg-blue-50 border-r-4 border-blue-700 font-medium"
-                : "hover:bg-gray-100 text-gray-700"
+                ? "text-blue-600 bg-blue-50 font-semibold"
+                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
             }`
           }
         >
-          <FaFileAlt />
+          <FaFileAlt className="text-base flex-shrink-0" />
           <span>Rejected Scripts</span>
         </NavLink>
 
+        {/* Examiner Management */}
         <NavLink
-  to="/admin/examiners"
-  className={({ isActive }) =>
-    `flex items-center gap-3 px-6 py-4 no-underline transition ${
-      isActive
-        ? "text-blue-700 bg-blue-50 border-r-4 border-blue-700 font-medium"
-        : "hover:bg-gray-100 text-gray-700"
-    }`
-  }
->
-  <FaUsers />
-  <span>Examiner Management</span>
-</NavLink>
+          to="/admin/examiners"
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3.5 py-2.5 rounded-xl no-underline transition text-sm font-medium ${
+              isActive
+                ? "text-blue-600 bg-blue-50 font-semibold"
+                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            }`
+          }
+        >
+          <FaUsers className="text-base flex-shrink-0" />
+          <span>Examiner Management</span>
+        </NavLink>
 
         {/* Audit Logs */}
         <NavLink
           to="/admin/audit-logs"
           className={({ isActive }) =>
-            `flex items-center gap-3 px-6 py-4 no-underline transition ${
+            `flex items-center gap-3 px-3.5 py-2.5 rounded-xl no-underline transition text-sm font-medium ${
               isActive
-                ? "text-blue-700 bg-blue-50 border-r-4 border-blue-700 font-medium"
-                : "hover:bg-gray-100 text-gray-700"
+                ? "text-blue-600 bg-blue-50 font-semibold"
+                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
             }`
           }
         >
-          <FaHistory />
+          <FaHistory className="text-base flex-shrink-0" />
           <span>Audit Logs</span>
         </NavLink>
 
-        {/* Admin Profile */}
+        {/* Profile */}
         <NavLink
           to="/admin/profile"
           className={({ isActive }) =>
-            `flex items-center gap-3 px-6 py-4 no-underline transition ${
+            `flex items-center gap-3 px-3.5 py-2.5 rounded-xl no-underline transition text-sm font-medium ${
               isActive
-                ? "text-blue-700 bg-blue-50 border-r-4 border-blue-700 font-medium"
-                : "hover:bg-gray-100 text-gray-700"
+                ? "text-blue-600 bg-blue-50 font-semibold"
+                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
             }`
           }
         >
-          <FaUserCog />
+          <FaUserCog className="text-base flex-shrink-0" />
           <span>Profile</span>
         </NavLink>
 
         {/* Logout */}
         <div
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-6 py-4 hover:bg-red-50 hover:text-red-600 transition text-left text-gray-700 cursor-pointer bg-transparent border-none"
+          className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition text-left text-gray-600 hover:bg-red-50 hover:text-red-600 cursor-pointer font-medium text-sm"
         >
-          <FaSignOutAlt />
+          <FaSignOutAlt className="text-base flex-shrink-0" />
           <span>Logout</span>
         </div>
       </nav>

@@ -35,3 +35,5 @@ app/storage/
 # OS files
 .DS_Store
 Thumbs.db
+.venv/
+backend/.venv/

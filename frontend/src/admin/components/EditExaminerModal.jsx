@@ -17,6 +17,7 @@ function EditExaminerModal({
     name: "",
     email: "",
     phone: "",
+    is_active: true,
   });
 
   const [password, setPassword] = useState("");
@@ -30,6 +31,7 @@ function EditExaminerModal({
         name: examiner.name || "",
         email: examiner.email || "",
         phone: examiner.phone || "",
+        is_active: examiner.is_active !== undefined ? examiner.is_active : true,
       });
     }
   }, [examiner]);
@@ -41,17 +43,45 @@ function EditExaminerModal({
     }));
   };
 
+  const handleClose = () => {
+    if (document.activeElement) {
+      document.activeElement.blur();
+    }
+    onClose();
+  };
+
+  const handleResetForm = () => {
+    if (examiner) {
+      setForm({
+        user_id: examiner.user_id || "",
+        name: examiner.name || "",
+        email: examiner.email || "",
+        phone: examiner.phone || "",
+        is_active: examiner.is_active !== undefined ? examiner.is_active : true,
+      });
+      setPassword("");
+    }
+  };
+
   const saveChanges = async () => {
     try {
       setLoading(true);
 
-      await updateExaminer(examiner.id, form);
+      const payload = {
+        user_id: form.user_id,
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        is_active: form.is_active !== undefined ? form.is_active : examiner?.is_active ?? true,
+      };
+
+      await updateExaminer(examiner.id, payload);
 
       alert("Examiner updated successfully.");
 
       onSuccess();
     } catch (err) {
-      alert(err.message);
+      alert(err.message || "Failed to update examiner.");
     } finally {
       setLoading(false);
     }
@@ -63,16 +93,21 @@ function EditExaminerModal({
       return;
     }
 
+    if (password.trim().length < 8) {
+      alert("Password must be at least 8 characters long.");
+      return;
+    }
+
     try {
       setLoading(true);
 
       await resetPassword(examiner.id, password);
 
-      alert("Password updated.");
+      alert("Password updated successfully.");
 
       setPassword("");
     } catch (err) {
-      alert(err.message);
+      alert(err.message || "Failed to update password.");
     } finally {
       setLoading(false);
     }
@@ -110,7 +145,7 @@ function EditExaminerModal({
             Edit Examiner
           </h2>
 
-          <button onClick={onClose}>
+          <button type="button" onClick={handleClose}>
             <FaTimes />
           </button>
 
@@ -124,56 +159,61 @@ function EditExaminerModal({
 
             <div>
 
-              <label>Login User ID</label>
+              <label className="block mb-1 font-medium">Login User ID</label>
 
               <input
+                autoComplete="off"
                 value={form.user_id}
                 onChange={(e) =>
                   updateField("user_id", e.target.value)
                 }
-                className="w-full border rounded-lg p-3"
+                className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-600"
               />
 
             </div>
 
             <div>
 
-              <label>Full Name</label>
+              <label className="block mb-1 font-medium">Full Name</label>
 
               <input
+                autoComplete="off"
                 value={form.name}
                 onChange={(e) =>
                   updateField("name", e.target.value)
                 }
-                className="w-full border rounded-lg p-3"
+                className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-600"
               />
 
             </div>
 
             <div>
 
-              <label>Email</label>
+              <label className="block mb-1 font-medium">Email</label>
 
               <input
+                type="email"
+                autoComplete="off"
                 value={form.email}
                 onChange={(e) =>
                   updateField("email", e.target.value)
                 }
-                className="w-full border rounded-lg p-3"
+                className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-600"
               />
 
             </div>
 
             <div>
 
-              <label>Phone</label>
+              <label className="block mb-1 font-medium">Phone</label>
 
               <input
+                autoComplete="off"
                 value={form.phone}
                 onChange={(e) =>
                   updateField("phone", e.target.value)
                 }
-                className="w-full border rounded-lg p-3"
+                className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-600"
               />
 
             </div>
@@ -185,26 +225,29 @@ function EditExaminerModal({
           <div>
 
             <label className="font-medium">
-              Reset Password
+              Update Password
             </label>
 
             <div className="flex gap-3 mt-2">
 
               <input
                 type="password"
+                autoComplete="new-password"
                 value={password}
-                placeholder="New Password"
+                placeholder="New Password (min 8 characters)"
                 onChange={(e) =>
                   setPassword(e.target.value)
                 }
-                className="flex-1 border rounded-lg p-3"
+                className="flex-1 border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-600"
               />
 
               <button
+                type="button"
+                disabled={loading}
                 onClick={handlePasswordReset}
-                className="bg-yellow-500 hover:bg-yellow-600 text-white px-5 rounded-lg"
+                className="bg-yellow-500 hover:bg-yellow-600 text-white px-5 rounded-lg font-medium cursor-pointer"
               >
-                Reset
+                Update Password
               </button>
 
             </div>
@@ -216,8 +259,10 @@ function EditExaminerModal({
           <div className="flex justify-between border-t pt-5">
 
             <button
+              type="button"
+              disabled={loading}
               onClick={toggleStatus}
-              className={`px-5 py-2 rounded-lg text-white ${
+              className={`px-5 py-2 rounded-lg text-white font-medium cursor-pointer ${
                 examiner.is_active
                   ? "bg-red-600 hover:bg-red-700"
                   : "bg-green-600 hover:bg-green-700"
@@ -231,16 +276,27 @@ function EditExaminerModal({
             <div className="flex gap-3">
 
               <button
-                onClick={onClose}
-                className="border px-5 py-2 rounded-lg"
+                type="button"
+                onClick={handleResetForm}
+                disabled={loading}
+                className="border border-gray-300 px-5 py-2 rounded-lg text-gray-700 hover:bg-gray-50 font-medium cursor-pointer"
+              >
+                Reset Form
+              </button>
+
+              <button
+                type="button"
+                onClick={handleClose}
+                className="border border-gray-300 px-5 py-2 rounded-lg text-gray-700 hover:bg-gray-50 font-medium cursor-pointer"
               >
                 Cancel
               </button>
 
               <button
+                type="button"
                 disabled={loading}
                 onClick={saveChanges}
-                className="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg"
+                className="bg-blue-700 hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-medium cursor-pointer"
               >
                 {loading
                   ? "Saving..."

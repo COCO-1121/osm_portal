@@ -117,7 +117,7 @@ def create_examiner(
         institute_id=examiner_institute_id,
         password_hash=hash_password(payload.password),
         role_id=examiner_role.id,
-        managed_by_admin_id=current_admin.id,
+        managed_by_admin_id=None,
         is_active=True,
     )
 
