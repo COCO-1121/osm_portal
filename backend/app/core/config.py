@@ -39,6 +39,13 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", "./uploads")
     OSM_SCAN_FOLDER: str = os.getenv("OSM_SCAN_FOLDER", "osm_scan")
 
+    # Allowed file types for scanned document uploads
+    ALLOWED_FILE_TYPES: List[str] = [
+        "application/pdf",
+        ".pdf",
+    ]
+    MAX_FILE_SIZE_MB: int = 50
+
     class Config:
         case_sensitive = True
         env_file = ".env"

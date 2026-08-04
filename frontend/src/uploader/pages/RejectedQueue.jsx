@@ -1,247 +1,409 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  FaHome,
-  FaSignOutAlt,
-  FaHistory,
-  FaQuestionCircle,
-  FaExclamationCircle,
-  FaEye,
-  FaRedo,
-  FaFileAlt
-} from "react-icons/fa";
+import { FaSearch, FaEye, FaTimes, FaUpload, FaHome, FaHistory, FaQuestionCircle, FaSignOutAlt, FaTimesCircle } from "react-icons/fa";
+
+const rejectedData = [
+  { barcode: "OSM-9823-112", subject: "Advanced Mathematics", reason: "Blurred Image" },
+  { barcode: "OSM-7742-009", subject: "Inorganic Chemistry", reason: "Missing Pages" },
+  { barcode: "OSM-1029-445", subject: "Macro Economics", reason: "Barcode Not Detected" },
+  { barcode: "OSM-5531-228", subject: "English Literature II", reason: "Poor Scan Quality" },
+  { barcode: "OSM-3391-771", subject: "History of Art", reason: "Duplicate Upload" },
+];
 
 function RejectedQueue() {
   const navigate = useNavigate();
-  const [rejectedDocs, setRejectedDocs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [filterReason, setFilterReason] = useState("");
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const reuploadInputRef = useRef(null);
 
-  const fetchRejectedQueue = useCallback(async () => {
-    const token = localStorage.getItem("uploader_token");
-    if (!token) {
-      setError("Please login again.");
-      navigate("/uploader-login");
-      return;
-    }
+  const handleReuploadClick = () => {
+    reuploadInputRef.current?.click();
+  };
 
-    setLoading(true);
-    setError("");
+  const handleReuploadFileSelected = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+  };
 
-    try {
-      // First try /api/rejected-queue/ backend endpoint
-      let response = await fetch("/api/rejected-queue/", {
-        method: "GET",
-        headers: {
-          Authorization: "Bearer " + token,
-          Accept: "application/json",
-        },
-      });
-
-      // Fallback to /api/scanned-documents/ if needed
-      if (!response.ok) {
-        response = await fetch("/api/scanned-documents/", {
-          method: "GET",
-          headers: {
-            Authorization: "Bearer " + token,
-            Accept: "application/json",
-          },
-        });
-      }
-
-      if (response.status === 401) {
-        setError("Session expired. Please login again.");
-        localStorage.removeItem("uploader_token");
-        localStorage.removeItem("uploader_id");
-        navigate("/uploader-login");
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch rejected queue (Status ${response.status})`);
-      }
-
-      const data = await response.json();
-      let list = Array.isArray(data) ? data : data.documents || [];
-      // Ensure only rejected items are shown if coming from /api/scanned-documents/
-      list = list.filter((doc) => doc.status === "Rejected" || doc.status === "rejected");
-      setRejectedDocs(list);
-    } catch (err) {
-      console.error(err);
-      setError(err?.message || "Failed to load rejected queue.");
-    } finally {
-      setLoading(false);
-    }
-  }, [navigate]);
-
-  useEffect(() => {
-    fetchRejectedQueue();
-  }, [fetchRejectedQueue]);
+  const closeModal = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setSelectedItem(null);
+  };
 
   const handleLogout = () => {
-    if (window.confirm("Are you sure you want to logout?")) {
-      localStorage.removeItem("uploader_token");
-      localStorage.removeItem("uploader_id");
+    const confirmed = window.confirm("Are you sure you want to logout?");
+    if (confirmed) {
       navigate("/uploader-login");
     }
   };
 
+  const reasons = [...new Set(rejectedData.map((item) => item.reason))];
+
+  const filteredData = rejectedData.filter((item) => {
+    const matchesSearch =
+      item.barcode.toLowerCase().includes(search.toLowerCase()) ||
+      item.subject.toLowerCase().includes(search.toLowerCase());
+    const matchesReason = filterReason ? item.reason === filterReason : true;
+    return matchesSearch && matchesReason;
+  });
+
+  const navLinkStyle = (active) => ({
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "12px 16px",
+    borderRadius: "10px",
+    color: active ? "#111827" : "#4b5563",
+    background: active ? "#f3f4f6" : "transparent",
+    fontSize: "15px",
+    fontWeight: active ? 600 : 500,
+    cursor: "pointer",
+  });
+
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Uploader Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col justify-between">
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f9fafb" }}>
+      {/* Sidebar */}
+      <aside
+        style={{
+          width: "260px",
+          background: "#ffffff",
+          borderRight: "1px solid #e5e7eb",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+        }}
+      >
         <div>
-          <div className="px-6 py-6">
-            <span className="text-2xl font-bold text-gray-900">OSM Portal</span>
+          <div style={{ padding: "20px 24px" }}>
+            <span style={{ fontSize: "22px", fontWeight: 700, color: "#1f2937" }}>OSM Portal</span>
           </div>
 
-          <nav className="mt-2 flex flex-col gap-1 px-3">
-            <a
-              onClick={() => navigate("/uploader/dashboard")}
-              className="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-600 hover:bg-gray-100 text-[15px] font-medium cursor-pointer"
-            >
-              <FaHome className="text-[17px]" />
-              <span>Home</span>
+          <nav style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "6px", padding: "0 12px" }}>
+            <a onClick={() => navigate("/uploader/dashboard")} style={navLinkStyle(false)}>
+              <FaHome /> <span>Home</span>
             </a>
-
-            <a className="flex items-center gap-3 px-3 py-3 rounded-lg bg-blue-50 text-blue-700 text-[15px] font-semibold cursor-pointer">
-              <FaExclamationCircle className="text-[17px]" />
-              <span>Rejected Queue</span>
+            <a style={navLinkStyle(true)}>
+              <FaTimesCircle /> <span>Rejected Queue</span>
             </a>
-
-            <a
-              onClick={() => navigate("/uploader/uploaded-copies")}
-              className="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-600 hover:bg-gray-100 text-[15px] font-medium cursor-pointer"
-            >
-              <FaHistory className="text-[17px]" />
-              <span>History</span>
+            <a onClick={() => navigate("/uploader/uploaded-copies")} style={navLinkStyle(false)}>
+              <FaHistory /> <span>History</span>
             </a>
-
-            <a className="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-600 hover:bg-gray-100 text-[15px] font-medium cursor-pointer">
-              <FaQuestionCircle className="text-[17px]" />
-              <span>Support</span>
+            <a style={navLinkStyle(false)}>
+              <FaQuestionCircle /> <span>Support</span>
             </a>
           </nav>
         </div>
 
-        <div className="px-3 pb-6">
-          <a
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-3 rounded-lg text-red-500 hover:bg-red-50 text-[15px] font-medium cursor-pointer"
-          >
-            <FaSignOutAlt className="text-[17px]" />
-            <span>Logout</span>
+        <div style={{ padding: "0 12px 20px" }}>
+          <a onClick={handleLogout} style={{ ...navLinkStyle(false), color: "#ef4444" }}>
+            <FaSignOutAlt /> <span>Logout</span>
           </a>
         </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Top Header */}
-        <header className="flex items-center justify-between bg-white border-b border-gray-200 px-8 py-5">
-          <h2 className="text-2xl font-bold text-gray-800">On-Screen Marking System</h2>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-semibold text-gray-800">Uploader</p>
-              <p className="text-xs text-gray-500">Rejected Queue</p>
+      {/* Main content */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {/* Top bar */}
+        <header
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "#ffffff",
+            borderBottom: "1px solid #e5e7eb",
+            padding: "12px 32px",
+          }}
+        >
+          <div style={{ position: "relative", width: "380px" }}>
+            <FaSearch
+              style={{
+                position: "absolute",
+                left: "14px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#9ca3af",
+                fontSize: "14px",
+              }}
+            />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by Barcode or Subject"
+              style={{
+                width: "100%",
+                paddingLeft: "38px",
+                paddingRight: "16px",
+                paddingTop: "10px",
+                paddingBottom: "10px",
+                borderRadius: "10px",
+                border: "1px solid #e5e7eb",
+                fontSize: "14px",
+                outline: "none",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ textAlign: "right" }}>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "#1f2937", margin: 0 }}>Academic Examiner</p>
+              <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>ID: 992831</p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
-              UP
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "9999px",
+                background: "#2563eb",
+                color: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "14px",
+                fontWeight: 600,
+              }}
+            >
+              EP
             </div>
           </div>
         </header>
 
-        {/* Body Content */}
-        <main className="p-8 flex-1">
-          <div className="flex items-center justify-between mb-6">
+        {/* Page content */}
+        <main style={{ padding: "20px 32px", flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Uploader Rejected Queue</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Scanned documents that require review or re-scanning.
+              <h1 style={{ fontSize: "24px", fontWeight: 700, color: "#111827", margin: 0 }}>Rejected Queue</h1>
+              <p style={{ fontSize: "13px", color: "#6b7280", marginTop: "2px" }}>
+                Manage and rectify scripts with automated or manual rejection flags.
               </p>
             </div>
-            <button
-              onClick={fetchRejectedQueue}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+
+            <select
+              value={filterReason}
+              onChange={(e) => setFilterReason(e.target.value)}
+              style={{
+                border: "1px solid #d1d5db",
+                borderRadius: "10px",
+                padding: "10px 16px",
+                fontSize: "14px",
+                color: "#374151",
+                outline: "none",
+                background: "#ffffff",
+              }}
             >
-              <FaRedo className="text-xs" /> Refresh
-            </button>
+              <option value="">Filter by Reason</option>
+              {reasons.map((reason) => (
+                <option key={reason} value={reason}>{reason}</option>
+              ))}
+            </select>
           </div>
 
-          {loading && (
-            <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-500">
-              Loading rejected documents...
-            </div>
-          )}
+          <div style={{ background: "#ffffff", borderRadius: "14px", border: "1px solid #e5e7eb", overflow: "hidden" }}>
+            <table style={{ width: "100%", fontSize: "14px", borderCollapse: "collapse" }}>
+              <thead style={{ background: "#1e3a8a" }}>
+                <tr>
+                  <th style={{ textAlign: "left", padding: "10px 24px", fontWeight: 700, color: "#ffffff", fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.03em" }}>Barcode</th>
+                  <th style={{ textAlign: "left", padding: "10px 24px", fontWeight: 700, color: "#ffffff", fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.03em" }}>Subject</th>
+                  <th style={{ textAlign: "left", padding: "10px 24px", fontWeight: 700, color: "#ffffff", fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.03em" }}>Reason for Rejection</th>
+                  <th style={{ textAlign: "left", padding: "10px 24px", fontWeight: 700, color: "#ffffff", fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.03em" }}>Preview Copy</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredData.map((item, idx) => (
+                  <tr key={item.barcode} style={{ borderTop: idx === 0 ? "none" : "1px solid #f3f4f6" }}>
+                    <td style={{ padding: "12px 24px", color: "#374151", fontWeight: 500 }}>{item.barcode}</td>
+                    <td style={{ padding: "12px 24px", color: "#374151" }}>{item.subject}</td>
+                    <td style={{ padding: "12px 24px" }}>
+                      <span
+                        style={{
+                          background: "#fef2f2",
+                          color: "#dc2626",
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          padding: "6px 14px",
+                          borderRadius: "9999px",
+                        }}
+                      >
+                        {item.reason}
+                      </span>
+                    </td>
+                    <td style={{ padding: "12px 24px" }}>
+                      <button
+                        onClick={() => { setPreviewUrl(null); setSelectedItem(item); }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          color: "#2563eb",
+                          fontWeight: 600,
+                          border: "1px solid #bfdbfe",
+                          background: "#eff6ff",
+                          borderRadius: "8px",
+                          padding: "8px 16px",
+                          cursor: "pointer",
+                          fontSize: "14px",
+                        }}
+                      >
+                        <FaEye /> Open
+                      </button>
+                    </td>
+                  </tr>
+                ))}
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 mb-6">
-              {error}
-            </div>
-          )}
+                {filteredData.length === 0 && (
+                  <tr>
+                    <td colSpan="4" style={{ padding: "32px 24px", textAlign: "center", color: "#9ca3af" }}>
+                      No results found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
 
-          {!loading && !error && (
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              {rejectedDocs.length === 0 ? (
-                <div className="p-12 text-center text-gray-500">
-                  <FaFileAlt className="mx-auto text-4xl text-gray-300 mb-3" />
-                  <p className="text-base font-semibold text-gray-700">No Rejected Items</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    There are currently no answer sheets in the rejected queue.
-                  </p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-sm text-gray-600">
-                    <thead className="bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                      <tr>
-                        <th className="px-6 py-4">Document ID / Barcode</th>
-                        <th className="px-6 py-4">Filename</th>
-                        <th className="px-6 py-4">Status</th>
-                        <th className="px-6 py-4">Upload Time</th>
-                        <th className="px-6 py-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 bg-white">
-                      {rejectedDocs.map((doc) => (
-                        <tr key={doc.id} className="hover:bg-gray-50 transition">
-                          <td className="px-6 py-4 font-mono font-medium text-gray-900">
-                            {doc.barcode || `DOC-${doc.id}`}
-                          </td>
-                          <td className="px-6 py-4 text-gray-800">
-                            {doc.filename || doc.original_filename || "scanned_copy.pdf"}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
-                              <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                              Rejected
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-gray-500">
-                            {doc.upload_time
-                              ? new Date(doc.upload_time).toLocaleString()
-                              : doc.created_at
-                              ? new Date(doc.created_at).toLocaleString()
-                              : "N/A"}
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <button
-                              onClick={() => navigate(`/uploader/preview/${doc.id}`)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-md font-medium text-xs transition"
-                            >
-                              <FaEye /> View Details
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+            <div style={{ padding: "12px 24px", fontSize: "13px", color: "#6b7280" }}>
+              Showing {filteredData.length} of {rejectedData.length} rejected scripts
             </div>
-          )}
+          </div>
         </main>
       </div>
+
+      {/* Dialog / Modal */}
+      {selectedItem && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 50,
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: "14px",
+              width: "100%",
+              maxWidth: "640px",
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "16px 24px",
+                borderBottom: "1px solid #e5e7eb",
+              }}
+            >
+              <div>
+                <h2 style={{ fontSize: "17px", fontWeight: 600, color: "#111827", margin: 0 }}>{selectedItem.barcode}</h2>
+                <p style={{ fontSize: "14px", color: "#6b7280", margin: 0 }}>{selectedItem.subject}</p>
+              </div>
+              <button
+                onClick={closeModal}
+                style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer" }}
+              >
+                <FaTimes size={18} />
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
+              {previewUrl ? (
+                <iframe
+                  src={previewUrl}
+                  title="Re-uploaded PDF preview"
+                  style={{
+                    width: "100%",
+                    height: "384px",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "10px",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    background: "#f3f4f6",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "10px",
+                    height: "384px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#9ca3af",
+                    fontSize: "14px",
+                  }}
+                >
+                  PDF preview will appear here
+                </div>
+              )}
+
+              <p style={{ marginTop: "16px", fontSize: "14px", color: "#4b5563" }}>
+                Rejection reason:{" "}
+                <span style={{ color: "#dc2626", fontWeight: 600 }}>{selectedItem.reason}</span>
+              </p>
+            </div>
+
+            {/* Hidden file input for re-upload */}
+            <input
+              type="file"
+              ref={reuploadInputRef}
+              accept="application/pdf"
+              onChange={handleReuploadFileSelected}
+              style={{ display: "none" }}
+            />
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", padding: "16px 24px", borderTop: "1px solid #e5e7eb" }}>
+              <button
+                onClick={closeModal}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: "10px",
+                  border: "1px solid #d1d5db",
+                  color: "#374151",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  background: "#ffffff",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReuploadClick}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "10px 16px",
+                  borderRadius: "10px",
+                  background: "#2563eb",
+                  color: "#ffffff",
+                  fontSize: "14px",
+                  fontWeight: 500,
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <FaUpload /> Re-upload
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

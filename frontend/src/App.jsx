@@ -44,13 +44,16 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Public & Role Selector Routes */}
+
+        {/* ================= PUBLIC & ROLE SELECTOR ROUTES ================= */}
         <Route path="/" element={<RoleSelectionPage />} />
         <Route path="/home" element={<Home />} />
 
-        {/* Public Admin Routes */}
+
+        {/* ================= PUBLIC ADMIN ROUTES ================= */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin-login" element={<AdminLoginPage />} />
+
 
         {/* ================= PROTECTED ADMIN ROUTES ================= */}
         <Route element={<AdminProtectedRoute />}>
@@ -60,56 +63,203 @@ function App() {
           <Route path="/admin/create-examiner" element={<CreateExaminer />} />
           <Route path="/admin/examiners" element={<ExaminerManagement />} />
 
-          <Route path="/admin/rejected-review" element={<RejectedScriptReview />} />
-          <Route path="/admin/rejected-review/:rejectionId" element={<RejectedScriptReview />} />
-          <Route path="/admin/credentials" element={<CredentialManagement />} />
-          <Route path="/admin/credential-management" element={<CredentialManagement />} />
-          <Route path="/admin/rejected-scripts" element={<RejectedScripts />} />
+          <Route
+            path="/admin/rejected-review"
+            element={<RejectedScriptReview />}
+          />
+
+          <Route
+            path="/admin/rejected-review/:rejectionId"
+            element={<RejectedScriptReview />}
+          />
+
+          <Route
+            path="/admin/credentials"
+            element={<CredentialManagement />}
+          />
+
+          <Route
+            path="/admin/credential-management"
+            element={<CredentialManagement />}
+          />
+
+          <Route
+            path="/admin/rejected-scripts"
+            element={<RejectedScripts />}
+          />
         </Route>
+
 
         {/* ================= EXAMINER ROUTES WITH DASHBOARD LAYOUT ================= */}
         <Route element={<DashboardLayout />}>
-          <Route path="/examiner/dashboard" element={<ExaminerSubjectPage />} />
-          <Route path="/examiner/subjects" element={<ExaminerSubjectPage />} />
-          <Route path="/examiner/instructions" element={<InstructionPage />} />
-          <Route path="/examiner/bank-details" element={<BankDetails />} />
-          <Route path="/examiner/day-wise-report" element={<DayWiseReport />} />
-          <Route path="/examiner/evaluator-report" element={<EvaluatorScriptReport />} />
-          <Route path="/examiner/assessment" element={<MainAssessment />} />
-          <Route path="/examiner/rejected-scripts" element={<ExaminerRejectedScripts />} />
-          <Route path="/examiner/rejected-queue" element={<ExaminerRejectedQueue />} />
+
+          <Route
+            path="/examiner/dashboard"
+            element={<ExaminerSubjectPage />}
+          />
+
+          <Route
+            path="/examiner/subjects"
+            element={<ExaminerSubjectPage />}
+          />
+
+          <Route
+            path="/examiner/instructions"
+            element={<InstructionPage />}
+          />
+
+          <Route
+            path="/examiner/bank-details"
+            element={<BankDetails />}
+          />
+
+          <Route
+            path="/examiner/day-wise-report"
+            element={<DayWiseReport />}
+          />
+
+          <Route
+            path="/examiner/evaluator-report"
+            element={<EvaluatorScriptReport />}
+          />
+
+          <Route
+            path="/examiner/assessment"
+            element={<MainAssessment />}
+          />
+
+          <Route
+            path="/examiner/rejected-scripts"
+            element={<ExaminerRejectedScripts />}
+          />
+
+          <Route
+            path="/examiner/rejected-queue"
+            element={<ExaminerRejectedQueue />}
+          />
+
 
           {/* Legacy Examiner Route Aliases */}
-          <Route path="/instruction" element={<InstructionPage />} />
-          <Route path="/bank-details" element={<BankDetails />} />
-          <Route path="/subject-assignment" element={<ExaminerSubjectPage />} />
-          <Route path="/main-assessment" element={<MainAssessment />} />
-          <Route path="/day-report" element={<DayWiseReport />} />
-          <Route path="/script-report" element={<EvaluatorScriptReport />} />
+
+          <Route
+            path="/instruction"
+            element={<InstructionPage />}
+          />
+
+          <Route
+            path="/bank-details"
+            element={<BankDetails />}
+          />
+
+          <Route
+            path="/subject-assignment"
+            element={<ExaminerSubjectPage />}
+          />
+
+          <Route
+            path="/main-assessment"
+            element={<MainAssessment />}
+          />
+
+          <Route
+            path="/day-report"
+            element={<DayWiseReport />}
+          />
+
+          <Route
+            path="/script-report"
+            element={<EvaluatorScriptReport />}
+          />
+
         </Route>
 
-        {/* Standalone Examiner Pages (No Layout Wrapper) */}
-        <Route path="/examiner/login" element={<ExaminerLoginPage />} />
-        <Route path="/login" element={<ExaminerLoginPage />} />
-        <Route path="/examiner/evaluation" element={<EvaluationPage />} />
-        <Route path="/examiner/evaluation/:scriptId" element={<EvaluationPage />} />
-        <Route path="/evaluation/:subjectId" element={<EvaluationPage />} />
+
+        {/* ================= STANDALONE EXAMINER PAGES ================= */}
+
+        <Route
+          path="/examiner/login"
+          element={<ExaminerLoginPage />}
+        />
+
+        <Route
+          path="/login"
+          element={<ExaminerLoginPage />}
+        />
+
+        <Route
+          path="/examiner/evaluation"
+          element={<EvaluationPage />}
+        />
+
+        <Route
+          path="/examiner/evaluation/:scriptId"
+          element={<EvaluationPage />}
+        />
+
+        <Route
+          path="/evaluation/:subjectId"
+          element={<EvaluationPage />}
+        />
+
 
         {/* ================= UPLOADER ROUTES ================= */}
-        <Route path="/uploader/login" element={<UploaderLoginPage />} />
-        <Route path="/uploader-login" element={<UploaderLoginPage />} />
-        <Route path="/uploader/dashboard" element={<UploaderDashboardPage />} />
-        <Route path="/uploader/uploads" element={<UploadedCopies />} />
-        <Route path="/uploader/uploaded-copies" element={<UploadedCopies />} />
-        <Route path="/uploader/preview" element={<PreviewPage />} />
-        <Route path="/uploader/preview/:docId" element={<PreviewPage />} />
-        <Route path="/uploader/rejected-queue" element={<RejectedQueue />} />
 
-        {/* Shared / Legacy Route Aliases */}
-        <Route path="/rejected-queue" element={<ExaminerRejectedQueue />} />
+        <Route
+          path="/uploader/login"
+          element={<UploaderLoginPage />}
+        />
 
-        {/* Fallback to Role Selector */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route
+          path="/uploader-login"
+          element={<UploaderLoginPage />}
+        />
+
+        <Route
+          path="/uploader/dashboard"
+          element={<UploaderDashboardPage />}
+        />
+
+        <Route
+          path="/uploader/uploads"
+          element={<UploadedCopies />}
+        />
+
+        <Route
+          path="/uploader/uploaded-copies"
+          element={<UploadedCopies />}
+        />
+
+        <Route
+          path="/uploader/preview"
+          element={<PreviewPage />}
+        />
+
+        <Route
+          path="/uploader/preview/:docId"
+          element={<PreviewPage />}
+        />
+
+        <Route
+          path="/uploader/rejected-queue"
+          element={<RejectedQueue />}
+        />
+
+
+        {/* ================= SHARED / LEGACY ROUTE ALIASES ================= */}
+
+        <Route
+          path="/rejected-queue"
+          element={<ExaminerRejectedQueue />}
+        />
+
+
+        {/* ================= FALLBACK ================= */}
+
+        <Route
+          path="*"
+          element={<Navigate to="/" replace />}
+        />
+
       </Routes>
     </Router>
   );

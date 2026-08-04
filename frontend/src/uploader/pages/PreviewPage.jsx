@@ -60,119 +60,205 @@ function PreviewPage() {
     };
   }, [previewUrl]);
 
+  const navLinkStyle = (active) => ({
+    display: "flex",
+    alignItems: "center",
+    gap: "12px",
+    padding: "12px 16px",
+    borderRadius: "10px",
+    color: active ? "#111827" : "#4b5563",
+    background: active ? "#f3f4f6" : "transparent",
+    fontSize: "15px",
+    fontWeight: active ? 600 : 500,
+    cursor: "pointer",
+  });
+
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f9fafb" }}>
       {/* Sidebar */}
-      <aside className="w-60 bg-white border-r border-gray-200 flex flex-col justify-between">
+      <aside
+        style={{
+          width: "260px",
+          background: "#ffffff",
+          borderRight: "1px solid #e5e7eb",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+        }}
+      >
         <div>
-          <div className="flex items-center gap-2 px-6 py-5">
-            <span className="text-xl font-bold text-gray-800">OSM Portal</span>
+          <div style={{ padding: "20px 24px" }}>
+            <span style={{ fontSize: "22px", fontWeight: 700, color: "#1f2937" }}>OSM Portal</span>
           </div>
 
-          <nav className="mt-4 flex flex-col gap-1 px-3">
-            <a
-              onClick={() => navigate("/uploader/dashboard")}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-100 text-sm font-medium cursor-pointer"
-            >
-              <FaHome /> Home
+          <nav style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "6px", padding: "0 12px" }}>
+            <a onClick={() => navigate("/uploader/dashboard")} style={navLinkStyle(false)}>
+              <FaHome /> <span>Home</span>
             </a>
-            <a
-              onClick={() => navigate("/rejected-queue")}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-100 text-sm font-medium cursor-pointer"
-            >
-              <FaExclamationCircle /> Rejected Queue
+            <a onClick={() => navigate("/rejected-queue")} style={navLinkStyle(false)}>
+              <FaExclamationCircle /> <span>Rejected Queue</span>
             </a>
-            <a
-              onClick={() => navigate("/uploader/uploaded-copies")}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-100 text-sm font-medium cursor-pointer"
-            >
-              <FaHistory /> History
+            <a onClick={() => navigate("/uploader/uploaded-copies")} style={navLinkStyle(false)}>
+              <FaHistory /> <span>History</span>
             </a>
-            <a className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-600 hover:bg-gray-100 text-sm font-medium">
-              <FaQuestionCircle /> Support
+            <a style={navLinkStyle(false)}>
+              <FaQuestionCircle /> <span>Support</span>
             </a>
           </nav>
         </div>
 
-        <div className="px-3 pb-5">
-          <a
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-500 hover:bg-red-50 text-sm font-medium cursor-pointer"
-          >
-            <FaSignOutAlt /> Logout
+        <div style={{ padding: "0 12px 20px" }}>
+          <a onClick={handleLogout} style={{ ...navLinkStyle(false), color: "#ef4444" }}>
+            <FaSignOutAlt /> <span>Logout</span>
           </a>
         </div>
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col">
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
         {/* Top bar */}
-        <header className="flex items-center justify-between bg-white border-b border-gray-200 px-8 py-4">
-          <div className="flex items-center gap-4">
+        <header
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "#ffffff",
+            borderBottom: "1px solid #e5e7eb",
+            padding: "16px 32px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <button
               onClick={() => navigate("/uploader/dashboard")}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm font-medium"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                color: "#4b5563",
+                fontSize: "14px",
+                fontWeight: 500,
+                background: "#ffffff",
+                border: "1px solid #e5e7eb",
+                borderRadius: "8px",
+                padding: "8px 14px",
+                cursor: "pointer",
+              }}
             >
               <FaArrowLeft /> Back to Dashboard
             </button>
-            <h2 className="text-xl font-bold text-gray-800">View Scanned Copy</h2>
+            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "#1f2937", margin: 0 }}>View Scanned Copy</h2>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-semibold text-gray-800">Uploader</p>
-              <p className="text-xs text-gray-500">ID: 992831</p>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div style={{ textAlign: "right" }}>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "#1f2937", margin: 0 }}>Uploader</p>
+              <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>ID: 992831</p>
             </div>
-            <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-semibold">
+            <div
+              style={{
+                width: "40px",
+                height: "40px",
+                borderRadius: "9999px",
+                background: "#2563eb",
+                color: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "14px",
+                fontWeight: 600,
+              }}
+            >
               UP
             </div>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="p-8 flex-1 flex justify-center">
+        <main style={{ padding: "32px", flex: 1, display: "flex", justifyContent: "center" }}>
           {/* Hidden input - never shown, opens native OS picker */}
           <input
             type="file"
             ref={fileInputRef}
             accept="application/pdf"
             onChange={handleFileSelected}
-            className="hidden"
+            style={{ display: "none" }}
           />
 
-          <div className="bg-white rounded-2xl border border-gray-200 p-10 w-full max-w-2xl mt-6 text-center h-fit">
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: "16px",
+              border: "1px solid #e5e7eb",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
+              padding: "48px",
+              width: "100%",
+              maxWidth: "640px",
+              marginTop: "24px",
+              textAlign: "center",
+              height: "fit-content",
+            }}
+          >
             {!selectedFile ? (
               <>
-                <FaFilePdf className="text-5xl text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 mb-6">
+                <FaFilePdf style={{ fontSize: "48px", color: "#d1d5db", margin: "0 auto 16px" }} />
+                <p style={{ color: "#6b7280", marginBottom: "24px", fontSize: "15px" }}>
                   No scanned copy selected yet. Choose a PDF from your device.
                 </p>
                 <button
                   onClick={handleChooseAgain}
-                  className="bg-blue-800 hover:bg-blue-900 text-white font-semibold py-3 px-8 rounded-lg text-sm"
+                  style={{
+                    background: "#1e40af",
+                    color: "#ffffff",
+                    fontWeight: 600,
+                    padding: "12px 32px",
+                    borderRadius: "10px",
+                    fontSize: "14px",
+                    border: "none",
+                    cursor: "pointer",
+                  }}
                 >
                   Choose File
                 </button>
               </>
             ) : (
               <>
-                <FaFilePdf className="text-5xl text-red-500 mx-auto mb-4" />
-                <p className="text-gray-800 font-medium mb-1">{selectedFile.name}</p>
-                <p className="text-xs text-gray-400 mb-6">
+                <FaFilePdf style={{ fontSize: "48px", color: "#ef4444", margin: "0 auto 16px" }} />
+                <p style={{ color: "#1f2937", fontWeight: 500, marginBottom: "4px" }}>{selectedFile.name}</p>
+                <p style={{ fontSize: "12px", color: "#9ca3af", marginBottom: "24px" }}>
                   {(selectedFile.size / 1024).toFixed(1)} KB
                 </p>
 
-                <div className="flex items-center justify-center gap-3">
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px" }}>
                   <button
                     onClick={handleView}
-                    className="flex items-center gap-2 bg-blue-800 hover:bg-blue-900 text-white font-semibold py-3 px-8 rounded-lg text-sm"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      background: "#1e40af",
+                      color: "#ffffff",
+                      fontWeight: 600,
+                      padding: "12px 32px",
+                      borderRadius: "10px",
+                      fontSize: "14px",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
                   >
                     <FaEye /> View
                   </button>
 
                   <button
                     onClick={handleChooseAgain}
-                    className="text-gray-600 hover:text-gray-900 font-medium text-sm underline"
+                    style={{
+                      color: "#4b5563",
+                      fontWeight: 500,
+                      fontSize: "14px",
+                      background: "none",
+                      border: "none",
+                      textDecoration: "underline",
+                      cursor: "pointer",
+                    }}
                   >
                     Choose a different file
                   </button>
@@ -185,24 +271,71 @@ function PreviewPage() {
 
       {/* PDF Preview Modal */}
       {showPreview && previewUrl && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-[90%] max-w-3xl h-[90vh] flex flex-col shadow-xl">
-            <div className="flex justify-between items-center p-5 border-b">
-              <h2 className="font-bold text-lg text-gray-900">
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.6)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 50,
+            padding: "16px",
+          }}
+        >
+          <div
+            style={{
+              background: "#ffffff",
+              borderRadius: "14px",
+              width: "90%",
+              maxWidth: "768px",
+              height: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "20px",
+                borderBottom: "1px solid #e5e7eb",
+              }}
+            >
+              <h2 style={{ fontWeight: 700, fontSize: "17px", color: "#111827", margin: 0 }}>
                 {selectedFile?.name || "Document Preview"}
               </h2>
               <button
                 onClick={handleClosePreview}
-                className="w-8 h-8 border rounded-md flex items-center justify-center text-gray-500 hover:bg-gray-100"
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#6b7280",
+                  background: "#ffffff",
+                  cursor: "pointer",
+                }}
               >
                 <FaTimes />
               </button>
             </div>
-            <div className="flex-1 p-5 overflow-auto">
+            <div style={{ flex: 1, padding: "20px", overflow: "auto" }}>
               <iframe
                 src={previewUrl}
                 title="Scanned Copy Preview"
-                className="w-full h-full min-h-[65vh] rounded-lg border"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  minHeight: "65vh",
+                  borderRadius: "10px",
+                  border: "1px solid #e5e7eb",
+                }}
               />
             </div>
           </div>
