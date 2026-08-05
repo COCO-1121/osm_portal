@@ -36,8 +36,6 @@ function UploaderDashboardPage() {
     }
   };
 
-  // Whenever the selected date changes, fetch exams that were conducted
-  // on that date so the "Select Exam" dropdown only shows relevant options.
   useEffect(() => {
     const fetchExams = async () => {
       if (!selectedDate) {
@@ -50,7 +48,7 @@ function UploaderDashboardPage() {
       if (!token) return;
 
       setExamsLoading(true);
-      setSelectedExam(""); // reset previously selected exam when date changes
+      setSelectedExam("");
 
       try {
         const response = await fetch(
@@ -94,8 +92,7 @@ function UploaderDashboardPage() {
 
     try {
       const formData = new FormData();
-      // backend's /upload endpoint reads this Form field as "exam"
-      formData.append("exam", selectedExam);
+      formData.append("exam_id", selectedExam);
       formData.append("date", selectedDate);
       formData.append("file", pickedFile);
 
@@ -202,11 +199,11 @@ function UploaderDashboardPage() {
           </div>
 
           <nav style={{ marginTop: "8px", display: "flex", flexDirection: "column", gap: "8px", padding: "0 16px" }}>
-            <a style={navLinkStyle(true)}>
+            <a onClick={() => navigate("/uploader/dashboard")} style={navLinkStyle(true)}>
               <FaHome style={{ fontSize: "18px" }} />
               <span>Home</span>
             </a>
-            <a onClick={() => navigate("/rejected-queue")} style={navLinkStyle(false)}>
+            <a onClick={() => navigate("/uploader/rejected-queue")} style={navLinkStyle(false)}>
               <FaExclamationCircle style={{ fontSize: "18px" }} />
               <span>Rejected Queue</span>
             </a>
@@ -231,7 +228,6 @@ function UploaderDashboardPage() {
 
       {/* Main content */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {/* Top bar */}
         <header
           style={{
             display: "flex",
@@ -270,7 +266,6 @@ function UploaderDashboardPage() {
           </div>
         </header>
 
-        {/* Page content */}
         <main
           style={{
             padding: "24px 40px",
@@ -307,7 +302,7 @@ function UploaderDashboardPage() {
               }}
             >
               <button
-                onClick={() => navigate("/rejected-queue")}
+                onClick={() => navigate("/uploader/rejected-queue")}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -464,7 +459,6 @@ function UploaderDashboardPage() {
               </div>
             </div>
 
-            {/* Hidden file input - triggered by Upload button, never shown */}
             <input
               type="file"
               ref={fileInputRef}
