@@ -1,7 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 @import "tailwindcss";
 
+
 /* Global Base Styles */
-html, body, #root {
+html,
+body,
+#root {
   min-height: 100vh;
   margin: 0;
   padding: 0;
@@ -17,7 +23,8 @@ table {
   border-collapse: collapse;
 }
 
-th, td {
+th,
+td {
   text-align: left;
 }
 
@@ -36,7 +43,7 @@ th, td {
   padding: 1.5rem;
 }
 
-.admin-login-main > div {
+.admin-login-main>div {
   width: 100%;
   max-width: 480px;
   box-sizing: border-box;

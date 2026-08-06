@@ -1,14 +1,16 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
   ],
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8000', // <-- apne backend ka actual port yahan daalo (Django=8000, Node/Express=3000 or 5000, FastAPI=8000)
+        target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false,
       },
