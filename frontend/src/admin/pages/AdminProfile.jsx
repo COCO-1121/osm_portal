@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import AdminLayout from "../../shared/layouts/AdminLayout";
 import { getLoginHistory, updateAdminProfile, changeAdminPassword } from "../services/adminService";
 import { useAdmin } from "../context/AdminContext";
@@ -15,6 +16,10 @@ function AdminProfile() {
   const [originalProfile, setOriginalProfile] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const token = localStorage.getItem("access_token");
+
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   useEffect(() => {
     fetchProfile();
   }, []);
@@ -239,7 +244,10 @@ function AdminProfile() {
                 Change your administrator account password securely.
               </p>
               <button
-                onClick={() => setShowPasswordForm(true)}
+                onClick={() => {
+                  setPassword({ oldPassword: "", newPassword: "", confirmPassword: "" });
+                  setShowPasswordForm(true);
+                }}
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
               >
                 Change Password
@@ -250,33 +258,66 @@ function AdminProfile() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Old Password</label>
-                  <input
-                    type="password"
-                    name="oldPassword"
-                    value={password.oldPassword}
-                    onChange={handlePasswordChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="relative flex items-center">
+                    <input
+                      type={showOldPassword ? "text" : "password"}
+                      name="oldPassword"
+                      autoComplete="new-password"
+                      value={password.oldPassword}
+                      onChange={handlePasswordChange}
+                      placeholder="Enter current password"
+                      className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowOldPassword(!showOldPassword)}
+                      className="absolute right-2.5 text-gray-400 hover:text-gray-600 cursor-pointer focus:outline-none"
+                    >
+                      {showOldPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                  <input
-                    type="password"
-                    name="newPassword"
-                    value={password.newPassword}
-                    onChange={handlePasswordChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="relative flex items-center">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      name="newPassword"
+                      autoComplete="new-password"
+                      value={password.newPassword}
+                      onChange={handlePasswordChange}
+                      placeholder="Enter new password"
+                      className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-2.5 text-gray-400 hover:text-gray-600 cursor-pointer focus:outline-none"
+                    >
+                      {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-                  <input
-                    type="password"
-                    name="confirmPassword"
-                    value={password.confirmPassword}
-                    onChange={handlePasswordChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="relative flex items-center">
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      name="confirmPassword"
+                      autoComplete="new-password"
+                      value={password.confirmPassword}
+                      onChange={handlePasswordChange}
+                      placeholder="Confirm new password"
+                      className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-2.5 text-gray-400 hover:text-gray-600 cursor-pointer focus:outline-none"
+                    >
+                      {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="mt-6 flex space-x-4">

@@ -266,52 +266,58 @@ def update_examiner(
         )
 
     # -----------------------------
-    # Duplicate Login User ID
+    # Uniqueness checks (only on modified fields)
     # -----------------------------
-    existing = examiner_db.scalar(
-        select(User).where(
-            User.user_id == payload.user_id,
-            User.id != examiner.id,
+    if payload.user_id and payload.user_id != examiner.user_id:
+        existing = examiner_db.scalar(
+            select(User).where(
+                User.user_id == payload.user_id,
+                User.id != examiner.id,
+            )
         )
-    )
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Login User ID '{payload.user_id}' already exists.",
+            )
 
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Login User ID already exists.",
+    if payload.email and payload.email != examiner.email:
+        existing = examiner_db.scalar(
+            select(User).where(
+                User.email == payload.email,
+                User.id != examiner.id,
+            )
         )
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Email address '{payload.email}' already exists.",
+            )
 
-    # -----------------------------
-    # Duplicate Email
-    # -----------------------------
-    existing = examiner_db.scalar(
-        select(User).where(
-            User.email == payload.email,
-            User.id != examiner.id,
+    if payload.phone and payload.phone != examiner.phone:
+        existing = examiner_db.scalar(
+            select(User).where(
+                User.phone == payload.phone,
+                User.id != examiner.id,
+            )
         )
-    )
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Phone number '{payload.phone}' already exists.",
+            )
 
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already exists.",
-        )
-
-    # -----------------------------
-    # Duplicate Phone
-    # -----------------------------
-    existing = examiner_db.scalar(
-        select(User).where(
-            User.phone == payload.phone,
-            User.id != examiner.id,
-        )
-    )
-
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Phone number already exists.",
-        )
+    changes = []
+    if payload.user_id and payload.user_id != examiner.user_id:
+        changes.append(f"User ID: {examiner.user_id} -> {payload.user_id}")
+    if payload.name and payload.name != examiner.name:
+        changes.append(f"Name: {examiner.name} -> {payload.name}")
+    if payload.email and payload.email != examiner.email:
+        changes.append(f"Email: {examiner.email} -> {payload.email}")
+    if payload.phone and payload.phone != examiner.phone:
+        changes.append(f"Phone: {examiner.phone or 'N/A'} -> {payload.phone}")
+    if payload.is_active is not None and payload.is_active != examiner.is_active:
+        changes.append(f"Status: {'Active' if examiner.is_active else 'Inactive'} -> {'Active' if payload.is_active else 'Inactive'}")
 
     examiner.user_id = payload.user_id
     examiner.name = payload.name
@@ -321,6 +327,20 @@ def update_examiner(
 
     examiner_db.commit()
     examiner_db.refresh(examiner)
+
+    if changes:
+        target_details = f"{payload.user_id} ({', '.join(changes)})"
+        if len(target_details) > 250:
+            target_details = target_details[:247] + "..."
+    else:
+        target_details = payload.user_id
+
+    create_audit_log(
+        db=db,
+        admin=current_admin,
+        action="Updated Examiner",
+        target=target_details,
+    )
 
     return ExaminerResponse(
         id=str(examiner.id),

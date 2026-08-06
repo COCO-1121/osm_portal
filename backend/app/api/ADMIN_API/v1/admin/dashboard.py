@@ -10,6 +10,9 @@ from fastapi import HTTPException
 from app.core.security import verify_password, hash_password
 
 
+from app.utils.audit_logger import create_audit_log
+
+
 router = APIRouter(
     prefix="/api/v1/admin",
     tags=["Admin"],
@@ -50,12 +53,31 @@ def update_admin_profile(
         if existing:
             raise HTTPException(status_code=409, detail=f"Phone number '{profile.phone}' is already registered.")
 
+    changes = []
+    if profile.name is not None and profile.name != current_admin.name:
+        changes.append(f"Name: {current_admin.name} -> {profile.name}")
+    if profile.email is not None and profile.email != current_admin.email:
+        changes.append(f"Email: {current_admin.email} -> {profile.email}")
+    if profile.phone is not None and profile.phone != current_admin.phone:
+        changes.append(f"Phone: {current_admin.phone or 'N/A'} -> {profile.phone}")
+
     current_admin.name = profile.name
     current_admin.email = profile.email
     current_admin.phone = profile.phone
 
     db.commit()
     db.refresh(current_admin)
+
+    if changes:
+        target_details = f"{current_admin.user_id} ({', '.join(changes)})"
+        if len(target_details) > 250:
+            target_details = target_details[:247] + "..."
+        create_audit_log(
+            db=db,
+            admin=current_admin,
+            action="Updated Profile",
+            target=target_details,
+        )
 
     return {
         "id": str(current_admin.id),
@@ -82,6 +104,13 @@ def change_admin_password(
     
     current_admin.password_hash = hash_password(data.new_password)
     db.commit()
+
+    create_audit_log(
+        db=db,
+        admin=current_admin,
+        action="Changed Password",
+        target=current_admin.user_id,
+    )
     
     return {"message": "Password changed successfully"}
     

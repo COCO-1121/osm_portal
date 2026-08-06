@@ -589,7 +589,7 @@ function AuditLogs() {
                             </td>
 
                             <td className="px-6 py-5">
-                              <span className="font-mono text-sm font-semibold text-blue-700">
+                              <span className="font-mono text-sm font-semibold text-blue-700 break-words">
                                 {log.target}
                               </span>
                             </td>

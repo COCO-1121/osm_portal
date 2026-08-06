@@ -104,12 +104,12 @@ function BottomToolbar({ currentPage, totalPages, onSave, onSubmit, onReject, on
       {/* Actions */}
       <div className="toolbar-actions">
         <button className="solution-btn" title="View Model Solutions & Answer Key Keys" onClick={() => handleAction("View Model Solutions")}>
-          <BookOpen size={16}/>
+          <BookOpen size={16} />
           Solution
         </button>
 
         <button className="qp-btn" title="View Exam Question Paper File" onClick={() => handleAction("View Question Paper")}>
-          <FileText size={16}/>
+          <FileText size={16} />
           Q.P.
         </button>
 
@@ -117,7 +117,7 @@ function BottomToolbar({ currentPage, totalPages, onSave, onSubmit, onReject, on
           alert("Draft saved successfully!");
           if (onSave) onSave();
         }}>
-          <Save size={16}/>
+          <Save size={16} />
           Save
         </button>
 
@@ -128,7 +128,7 @@ function BottomToolbar({ currentPage, totalPages, onSave, onSubmit, onReject, on
             alert("Script marked under UFM successfully.");
           }
         }}>
-          <AlertTriangle size={16}/>
+          <AlertTriangle size={16} />
           UFM
         </button>
 
@@ -139,7 +139,7 @@ function BottomToolbar({ currentPage, totalPages, onSave, onSubmit, onReject, on
             alert("Script rejected for re-scanning.");
           }
         }}>
-          <X size={16}/>
+          <X size={16} />
           Reject
         </button>
 
@@ -150,7 +150,7 @@ function BottomToolbar({ currentPage, totalPages, onSave, onSubmit, onReject, on
             navigate('/day-report');
           }
         }}>
-          <Send size={16}/>
+          <Send size={16} />
           Submit
         </button>
       </div>

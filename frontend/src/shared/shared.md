@@ -73,3 +73,18 @@ This document tracks all changes made to primary entry-point files and secondary
 - **Changes Applied**:
   - `PDFViewer.jsx`: Embedded native PDF rendering iframe with robust path resolution for storage uploads (`/files/uploads/${barcode}.pdf`), page navigation, and open-in-new-tab link.
   - `ReviewActions.jsx`: Removed Assignment Policy block completely, streamlined review decision choices (Return to Examiner Queue vs Return to Uploader), and connected decision submission to `/api/v1/admin/rejected-scripts/{rejection_id}/decision` endpoint.
+
+### [2026-08-04] Examiner Module Dynamic Script Details & Review Actions Update
+- **Target Files**: `frontend/src/examiner/components/ScriptDetailsCard.jsx`, `frontend/src/examiner/components/ReviewActions.jsx`
+- **Reason**: Fix hardcoded dummy values in `ScriptDetailsCard` causing status mismatch between list view and detail view, and handle already-reviewed scripts in `ReviewActions`.
+- **Changes Applied**:
+  - `ScriptDetailsCard.jsx`: Updated component to accept `script` prop and dynamically render Barcode, Subject, Examiner ID, Centre ID, Rejected Date, Status (Pending / Returned to Examiner / Returned to Uploader), and Reject Reason.
+  - `ReviewActions.jsx`: Updated component to accept `script` prop and render an informative decision summary card when the script has already been reviewed by an admin instead of prompting for duplicate submission.
+
+### [2026-08-04] Primary Entry-Point Routers & App Routes for UFM Workflow
+- **Target Files**: `backend/app/main.py`, `frontend/src/App.jsx`
+- **Reason**: Register UFM (Unfair Means) backend API endpoints, database startup seeding, and frontend routes.
+- **Changes Applied**:
+  - `backend/app/main.py`: Imported `admin_ufm_cases_router` from `app.api.ADMIN_API.v1.admin.ufm_cases`, registered router on FastAPI `app`, and added `seed_ufm_cases()` (BC102341, BC102342, BC102343) to startup event.
+  - `frontend/src/App.jsx`: Imported `UFMCases` and `UFMReview` pages and registered routes `/admin/ufm-cases`, `/admin/ufm-review`, and `/admin/ufm-review/:ufmId` under `AdminProtectedRoute`.
+

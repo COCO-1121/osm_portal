@@ -88,6 +88,33 @@ def seed_test_rejection():
                 "examiner_remarks": "Page 2 missing from Physics script.",
                 "status": "PENDING_ADMIN_REVIEW",
             },
+            {
+                "barcode": "BC2026004",
+                "subject": "Chemistry",
+                "centre_id": "CTR004",
+                "file_path": "/files/uploads/BC2026004.pdf",
+                "reason": "Improper Scanning",
+                "examiner_remarks": "Scan orientation is upside down and margins are cut off.",
+                "status": "PENDING_ADMIN_REVIEW",
+            },
+            {
+                "barcode": "BC2026005",
+                "subject": "English",
+                "centre_id": "CTR005",
+                "file_path": "/files/uploads/BC2026005.pdf",
+                "reason": "Answer Book of different Subject",
+                "examiner_remarks": "Answer book uploaded under English belongs to History.",
+                "status": "PENDING_ADMIN_REVIEW",
+            },
+            {
+                "barcode": "BC2026006",
+                "subject": "Biology",
+                "centre_id": "CTR006",
+                "file_path": "/files/uploads/BC2026006.pdf",
+                "reason": "Same page Scan twice",
+                "examiner_remarks": "Page 5 of the answer script has been scanned twice in duplicate.",
+                "status": "PENDING_ADMIN_REVIEW",
+            },
         ]
 
         for item in sample_scripts:
