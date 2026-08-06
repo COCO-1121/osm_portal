@@ -31,5 +31,6 @@ def login(data: LoginRequest, db: Session = Depends(get_examiner_db)):
         "message": "Login Successful",
         "examiner_id": user.user_id,
         "name": user.name,
+        "institute_id": getattr(user, "institute_id", None) or "INST-001",
         "role": user.role.name if user.role else "EXAMINER",
     }

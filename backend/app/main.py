@@ -27,9 +27,11 @@ print("Loaded examiner_auth_router:", examiner_auth_router is not None)
 # Import dashboard router
 try:
     from app.api.ADMIN_API.v1.examiner.dashboard import router as examiner_dashboard_router
+    from app.api.ADMIN_API.v1.examiner.examiner_reports import router as examiner_reports_router
 except ImportError as e:
     print("FAILED TO IMPORT EXAMINER DASHBOARD ROUTER:", e)
     examiner_dashboard_router = None
+    examiner_reports_router = None
 
 # Uploader Routers
 try:
@@ -108,6 +110,8 @@ if examiner_auth_router:
     app.include_router(examiner_auth_router)
 if examiner_dashboard_router:
     app.include_router(examiner_dashboard_router)
+if examiner_reports_router:
+    app.include_router(examiner_reports_router)
 
 # Register Uploader Routers (if available)
 if uploader_auth_router:

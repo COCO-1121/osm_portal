@@ -1,20 +1,36 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaSearch, FaEye, FaTimes, FaUpload, FaHome, FaHistory, FaQuestionCircle, FaSignOutAlt, FaTimesCircle } from "react-icons/fa";
-
-const rejectedData = [
-  { barcode: "OSM-9823-112", subject: "Advanced Mathematics", reason: "Blurred Image" },
-  { barcode: "OSM-7742-009", subject: "Inorganic Chemistry", reason: "Missing Pages" },
-  { barcode: "OSM-1029-445", subject: "Macro Economics", reason: "Barcode Not Detected" },
-  { barcode: "OSM-5531-228", subject: "English Literature II", reason: "Poor Scan Quality" },
-  { barcode: "OSM-3391-771", subject: "History of Art", reason: "Duplicate Upload" },
-];
+import apiClient from "../../shared/services/apiClient";
 
 function RejectedQueue() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [filterReason, setFilterReason] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
+  const [rejectedData, setRejectedData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRejectedQueue = async () => {
+      try {
+        const response = await apiClient.get("/examiner/rejected-queue");
+        if (response.data && Array.isArray(response.data)) {
+          setRejectedData(response.data);
+        } else {
+          const stored = localStorage.getItem("examiner_rejected_scripts");
+          setRejectedData(stored ? JSON.parse(stored) : []);
+        }
+      } catch (err) {
+        const stored = localStorage.getItem("examiner_rejected_scripts");
+        setRejectedData(stored ? JSON.parse(stored) : []);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRejectedQueue();
+  }, []);
 
   const handleLogout = () => {
     const confirmed = window.confirm("Are you sure you want to logout?");
@@ -23,13 +39,16 @@ function RejectedQueue() {
     }
   };
 
-  const reasons = [...new Set(rejectedData.map((item) => item.reason))];
+  const reasons = [...new Set(rejectedData.map((item) => item.reason || item.adminRemarks || "Other"))];
 
   const filteredData = rejectedData.filter((item) => {
+    const barcodeStr = item.barcode || "";
+    const subjectStr = item.subject || "";
     const matchesSearch =
-      item.barcode.toLowerCase().includes(search.toLowerCase()) ||
-      item.subject.toLowerCase().includes(search.toLowerCase());
-    const matchesReason = filterReason ? item.reason === filterReason : true;
+      barcodeStr.toLowerCase().includes(search.toLowerCase()) ||
+      subjectStr.toLowerCase().includes(search.toLowerCase());
+    const itemReason = item.reason || item.adminRemarks || "Other";
+    const matchesReason = filterReason ? itemReason === filterReason : true;
     return matchesSearch && matchesReason;
   });
 

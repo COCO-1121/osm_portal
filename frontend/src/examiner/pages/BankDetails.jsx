@@ -44,23 +44,35 @@ function BankDetails() {
   const [errors, setErrors] = useState({});
   const [ifscVerified, setIfscVerified] = useState(false);
 
+  // Automatically clear errors for any field that has a value
+  useEffect(() => {
+    setErrors(prevErrors => {
+      let hasChanges = false;
+      const updated = { ...prevErrors };
+      Object.keys(formData).forEach(key => {
+        if (formData[key] && formData[key].toString().trim() !== "" && updated[key]) {
+          delete updated[key];
+          hasChanges = true;
+        }
+      });
+      return hasChanges ? updated : prevErrors;
+    });
+  }, [formData]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
-    // Clear error when typing
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: "" }));
-    }
+
     if (name === "ifsc") {
       setIfscVerified(false);
     }
   };
 
   const handleVerify = () => {
-    if (!formData.ifsc) {
+    if (!formData.ifsc || !formData.ifsc.trim()) {
       setErrors(prev => ({ ...prev, ifsc: "This field is required." }));
       return;
     }
@@ -70,11 +82,26 @@ function BankDetails() {
             bankName: prev.bankName || "State Bank of India",
             branch: prev.branch || "Main Branch",
         }));
+        setErrors(prev => ({
+          ...prev,
+          ifsc: "",
+          bankName: "",
+          branch: ""
+        }));
         setIfscVerified(true);
     } else {
         setErrors(prev => ({ ...prev, ifsc: "Invalid IFSC Code" }));
         setIfscVerified(false);
     }
+  };
+
+  const handleCancel = () => {
+    const isUpdated = localStorage.getItem("examiner_bank_details_updated");
+    if (!isUpdated) {
+      alert("Filling Evaluator Profile & Bank Details is mandatory. Please complete the form and click 'Update Details' to proceed.");
+      return;
+    }
+    navigate('/examiner/subjects');
   };
 
   const handleUpdate = () => {
@@ -85,7 +112,7 @@ function BankDetails() {
     ];
 
     requiredFields.forEach(key => {
-      if (!formData[key]) {
+      if (!formData[key] || !formData[key].trim()) {
         newErrors[key] = "This field is required.";
       }
     });
@@ -100,10 +127,11 @@ function BankDetails() {
       return;
     }
 
-    // Save details to localStorage
+    // Save details and set mandatory completed flag
     localStorage.setItem("examiner_bank_details", JSON.stringify(formData));
+    localStorage.setItem("examiner_bank_details_updated", "true");
     alert("Bank details updated successfully!");
-    navigate('/examiner/dashboard');
+    navigate('/examiner/subjects');
   };
 
   return (
@@ -314,7 +342,7 @@ function BankDetails() {
           </div>
 
           <div className="button-group">
-            <button type="button" className="cancel-btn" onClick={() => navigate('/examiner/dashboard')}>Cancel</button>
+            <button type="button" className="cancel-btn" onClick={handleCancel}>Cancel</button>
             <button
               type="button"
               onClick={handleUpdate}

@@ -1,8 +1,29 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Monitor, ShieldCheck, AlertTriangle, BookOpen, CheckCircle } from "lucide-react";
 import Footer from "../../shared/components/Footer";
+
 export default function InstructionPage() {
   const navigate = useNavigate();
+  const [isAccepted, setIsAccepted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  // Clear bank details completion flag when instructions are opened
+  useEffect(() => {
+    localStorage.removeItem("examiner_bank_details_updated");
+    localStorage.removeItem("examiner_bank_details");
+  }, []);
+
+  const handleContinue = () => {
+    if (!isAccepted) {
+      setErrorMsg("Please check the box to confirm you have read and understood all instructions.");
+      return;
+    }
+    setErrorMsg("");
+    localStorage.setItem("examiner_instructions_accepted", "true");
+    navigate('/examiner/bank-details');
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
 
@@ -149,26 +170,43 @@ export default function InstructionPage() {
 
         {/* Checkbox */}
 
-        <div className="mt-8 flex items-center gap-3">
+        <div className="mt-8">
 
-          <input
-            type="checkbox"
-            className="w-5 h-5"
-          />
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isAccepted}
+              onChange={(e) => {
+                setIsAccepted(e.target.checked);
+                if (e.target.checked) setErrorMsg("");
+              }}
+              className="w-5 h-5 accent-blue-700 cursor-pointer"
+            />
 
-          <span className="text-gray-700">
-            I have read and understood all the instructions.
-          </span>
+            <span className="text-gray-700 font-medium select-none">
+              I have read and understood all the instructions.
+            </span>
+          </label>
+
+          {errorMsg && (
+            <p className="text-red-500 text-sm mt-2 font-semibold flex items-center gap-1">
+              ⚠️ {errorMsg}
+            </p>
+          )}
 
         </div>
 
         {/* Continue */}
 
-        <div className="mt-8">
+        <div className="mt-6">
 
           <button
-            onClick={() => navigate('/examiner/bank-details')}
-            className="bg-blue-700 hover:bg-blue-800 text-white px-8 py-3 rounded-xl text-lg font-semibold shadow"
+            onClick={handleContinue}
+            className={`px-8 py-3 rounded-xl text-lg font-semibold shadow transition-all ${
+              isAccepted
+                ? "bg-blue-700 hover:bg-blue-800 text-white cursor-pointer"
+                : "bg-blue-300 text-white cursor-not-allowed opacity-80"
+            }`}
           >
             Continue for Evaluation
           </button>

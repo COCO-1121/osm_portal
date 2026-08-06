@@ -1,45 +1,69 @@
 import React, { useState, useEffect } from "react";
 import "./DayWiseReport.css";
 import { useNavigate } from "react-router-dom";
+import apiClient from "../../shared/services/apiClient";
 
 function DayWiseReport() {
   const navigate = useNavigate();
 
   const [report, setReport] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let dailyStats = JSON.parse(localStorage.getItem('daily_stats'));
-    
-    // Initialize if empty to keep default structure for demo
-    if (!dailyStats || Object.keys(dailyStats).length === 0) {
-      const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
-      dailyStats = {
-        [`${today}_0899`]: {
-          subject: "MODERN PHYSICS",
-          completed: 1,
-          rejected: 0,
-          ufm: 0
+    async function fetchDayWiseReport() {
+      try {
+        const response = await apiClient.get("/examiner/day-wise-report");
+        if (response.data && Array.isArray(response.data)) {
+          setReport(response.data);
+        } else {
+          loadFallbackLocalStats();
         }
-      };
-      localStorage.setItem('daily_stats', JSON.stringify(dailyStats));
+      } catch (err) {
+        console.warn("API day-wise report unavailable, using dynamic fallback:", err);
+        loadFallbackLocalStats();
+      } finally {
+        setLoading(false);
+      }
     }
 
-    // Convert object to array for table rendering
-    const reportData = Object.entries(dailyStats).map(([key, value], index) => {
-      const [date, code] = key.split('_');
-      return {
-        id: index + 1,
-        code,
-        subject: value.subject,
-        date,
-        completed: value.completed,
-        rejected: value.rejected,
-        ufm: value.ufm
-      };
-    });
+    function loadFallbackLocalStats() {
+      const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+      let dailyStats = JSON.parse(localStorage.getItem('daily_stats'));
+      
+      // Clean up old stale demo keys if present
+      if (dailyStats && (dailyStats['17-07-2026_0302'] || dailyStats['20-07-2026_0302'])) {
+        localStorage.removeItem('daily_stats');
+        dailyStats = null;
+      }
 
-    reportData.reverse(); 
-    setReport(reportData);
+      if (!dailyStats || Object.keys(dailyStats).length === 0) {
+        dailyStats = {
+          [`${today}_048`]: {
+            subject: "PHYSICS (048)",
+            completed: 0,
+            rejected: 0,
+            ufm: 0
+          }
+        };
+      }
+
+      const reportData = Object.entries(dailyStats).map(([key, value], index) => {
+        const [date, code] = key.split('_');
+        return {
+          id: index + 1,
+          code: code || "048",
+          subject: value.subject || "PHYSICS (048)",
+          date: date || today,
+          completed: value.completed || 0,
+          rejected: value.rejected || 0,
+          ufm: value.ufm || 0
+        };
+      });
+      reportData.reverse();
+      setReport(reportData);
+    }
+
+    fetchDayWiseReport();
   }, []);
 
   const totalCompleted = report.reduce((sum, item) => sum + item.completed, 0);

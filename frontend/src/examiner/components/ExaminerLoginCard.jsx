@@ -20,14 +20,19 @@ function ExaminerLoginCard() {
     password: "",
   });
 
+  const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+    }
   };
 
   const handleClear = () => {
@@ -38,12 +43,25 @@ function ExaminerLoginCard() {
       email: "",
       password: "",
     });
+    setFieldErrors({});
     setError("");
   };
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     setError("");
+
+    const newFieldErrors = {};
+    if (!formData.examinerId.trim()) newFieldErrors.examinerId = "This field is required";
+    if (!formData.instituteId.trim()) newFieldErrors.instituteId = "This field is required";
+    if (!formData.phone.trim() && !formData.email.trim()) newFieldErrors.phone = "This field is required";
+    if (!formData.password.trim()) newFieldErrors.password = "This field is required";
+
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -66,12 +84,15 @@ function ExaminerLoginCard() {
 
       if (data.access_token) {
         localStorage.setItem("access_token", data.access_token);
-        if (data.examiner_id) {
-          localStorage.setItem("examiner_id", data.examiner_id);
-        }
+        localStorage.setItem("examiner_id", data.examiner_id || formData.examinerId);
+        localStorage.setItem("institute_id", data.institute_id || formData.instituteId);
       }
 
-      navigate("/examiner/dashboard");
+      // Reset flags for new login session
+      localStorage.removeItem("examiner_instructions_accepted");
+      localStorage.removeItem("examiner_bank_details_updated");
+
+      navigate("/examiner/instructions");
     } catch (err) {
       console.error(err);
       setError(err.message || "Failed to login. Please check your credentials.");
@@ -98,9 +119,9 @@ function ExaminerLoginCard() {
           Examiner User ID
         </label>
 
-        <div className="mt-1 flex items-center border border-gray-300 rounded-lg px-3 py-2.5 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
+        <div className={`mt-1 flex items-center border rounded-lg px-3 py-2.5 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100 ${fieldErrors.examinerId ? 'border-red-500 bg-red-50/20' : 'border-gray-300'}`}>
 
-          <FaUserShield className="text-gray-400 mr-2" />
+          <FaUserShield className={fieldErrors.examinerId ? "text-red-400 mr-2" : "text-gray-400 mr-2"} />
 
           <input
             type="text"
@@ -112,6 +133,9 @@ function ExaminerLoginCard() {
           />
 
         </div>
+        {fieldErrors.examinerId && (
+          <p className="text-xs text-red-500 mt-1">{fieldErrors.examinerId}</p>
+        )}
       </div>
 
       {/* Institute */}
@@ -120,9 +144,9 @@ function ExaminerLoginCard() {
           Institute ID
         </label>
 
-        <div className="mt-1 flex items-center border border-gray-300 rounded-lg px-3 py-2.5 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
+        <div className={`mt-1 flex items-center border rounded-lg px-3 py-2.5 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100 ${fieldErrors.instituteId ? 'border-red-500 bg-red-50/20' : 'border-gray-300'}`}>
 
-          <FaBuilding className="text-gray-400 mr-2" />
+          <FaBuilding className={fieldErrors.instituteId ? "text-red-400 mr-2" : "text-gray-400 mr-2"} />
 
           <input
             type="text"
@@ -134,6 +158,9 @@ function ExaminerLoginCard() {
           />
 
         </div>
+        {fieldErrors.instituteId && (
+          <p className="text-xs text-red-500 mt-1">{fieldErrors.instituteId}</p>
+        )}
       </div>
 
       {/* Phone */}
@@ -142,9 +169,9 @@ function ExaminerLoginCard() {
           Phone Number
         </label>
 
-        <div className="mt-1 flex items-center border border-gray-300 rounded-lg px-3 py-2.5 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
+        <div className={`mt-1 flex items-center border rounded-lg px-3 py-2.5 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100 ${fieldErrors.phone ? 'border-red-500 bg-red-50/20' : 'border-gray-300'}`}>
 
-          <FaPhone className="text-gray-400 mr-2" />
+          <FaPhone className={fieldErrors.phone ? "text-red-400 mr-2" : "text-gray-400 mr-2"} />
 
           <input
             type="text"
@@ -156,6 +183,9 @@ function ExaminerLoginCard() {
           />
 
         </div>
+        {fieldErrors.phone && (
+          <p className="text-xs text-red-500 mt-1">{fieldErrors.phone}</p>
+        )}
       </div>
 
       {/* Password */}
@@ -164,9 +194,9 @@ function ExaminerLoginCard() {
           Password
         </label>
 
-        <div className="mt-1 flex items-center border border-gray-300 rounded-lg px-3 py-2.5 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
+        <div className={`mt-1 flex items-center border rounded-lg px-3 py-2.5 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100 ${fieldErrors.password ? 'border-red-500 bg-red-50/20' : 'border-gray-300'}`}>
 
-          <FaLock className="text-gray-400 mr-2" />
+          <FaLock className={fieldErrors.password ? "text-red-400 mr-2" : "text-gray-400 mr-2"} />
 
           <input
             type="password"
@@ -178,6 +208,9 @@ function ExaminerLoginCard() {
           />
 
         </div>
+        {fieldErrors.password && (
+          <p className="text-xs text-red-500 mt-1">{fieldErrors.password}</p>
+        )}
       </div>
 
       {/* Error Banner */}

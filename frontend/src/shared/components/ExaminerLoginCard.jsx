@@ -21,11 +21,20 @@ function ExaminerLoginCard() {
     contact: "",
   });
 
+  const [errors, setErrors] = useState({});
+
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
   };
 
   const handleClear = () => {
@@ -36,9 +45,33 @@ function ExaminerLoginCard() {
       dob: "",
       contact: "",
     });
+    setErrors({});
   };
 
   const handleLogin = async () => {
+    const newErrors = {};
+
+    if (!formData.userId.trim()) {
+      newErrors.userId = "This field is required";
+    }
+    if (!formData.instituteId.trim()) {
+      newErrors.instituteId = "This field is required";
+    }
+    if (!formData.password.trim()) {
+      newErrors.password = "This field is required";
+    }
+    if (!formData.dob.trim()) {
+      newErrors.dob = "This field is required";
+    }
+    if (!formData.contact.trim()) {
+      newErrors.contact = "This field is required";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
     try {
       const response = await apiClient.post("/examiner/auth/login", {
         examiner_id: formData.userId,
@@ -49,6 +82,11 @@ function ExaminerLoginCard() {
       });
       const { access_token } = response.data;
       localStorage.setItem('examinerToken', access_token);
+      
+      // Reset flags for new login session
+      localStorage.removeItem("examiner_instructions_accepted");
+      localStorage.removeItem("examiner_bank_details_updated");
+      
       navigate("/examiner/instructions");
     } catch (error) {
       console.error("Login failed", error);
@@ -79,9 +117,9 @@ function ExaminerLoginCard() {
             User ID
           </label>
 
-          <div className="mt-1 flex items-center border rounded-lg px-3 py-2.5">
+          <div className={`mt-1 flex items-center border rounded-lg px-3 py-2.5 ${errors.userId ? 'border-red-500 bg-red-50/20' : 'border-gray-300'}`}>
 
-            <FaUser className="text-gray-400 mr-2" />
+            <FaUser className={errors.userId ? "text-red-400 mr-2" : "text-gray-400 mr-2"} />
 
             <input
               type="text"
@@ -93,6 +131,9 @@ function ExaminerLoginCard() {
             />
 
           </div>
+          {errors.userId && (
+            <p className="text-xs text-red-500 mt-1">{errors.userId}</p>
+          )}
 
         </div>
 
@@ -102,9 +143,9 @@ function ExaminerLoginCard() {
             Institute ID
           </label>
 
-          <div className="mt-1 flex items-center border rounded-lg px-3 py-2.5">
+          <div className={`mt-1 flex items-center border rounded-lg px-3 py-2.5 ${errors.instituteId ? 'border-red-500 bg-red-50/20' : 'border-gray-300'}`}>
 
-            <FaBuilding className="text-gray-400 mr-2" />
+            <FaBuilding className={errors.instituteId ? "text-red-400 mr-2" : "text-gray-400 mr-2"} />
 
             <input
               type="text"
@@ -116,6 +157,9 @@ function ExaminerLoginCard() {
             />
 
           </div>
+          {errors.instituteId && (
+            <p className="text-xs text-red-500 mt-1">{errors.instituteId}</p>
+          )}
 
         </div>
 
@@ -131,9 +175,9 @@ function ExaminerLoginCard() {
             Password
           </label>
 
-          <div className="mt-1 flex items-center border rounded-lg px-3 py-2.5">
+          <div className={`mt-1 flex items-center border rounded-lg px-3 py-2.5 ${errors.password ? 'border-red-500 bg-red-50/20' : 'border-gray-300'}`}>
 
-            <FaLock className="text-gray-400 mr-2" />
+            <FaLock className={errors.password ? "text-red-400 mr-2" : "text-gray-400 mr-2"} />
 
             <input
               type="password"
@@ -145,6 +189,9 @@ function ExaminerLoginCard() {
             />
 
           </div>
+          {errors.password && (
+            <p className="text-xs text-red-500 mt-1">{errors.password}</p>
+          )}
 
         </div>
 
@@ -154,9 +201,9 @@ function ExaminerLoginCard() {
             Date of Birth
           </label>
 
-          <div className="mt-1 flex items-center border rounded-lg px-3 py-2.5">
+          <div className={`mt-1 flex items-center border rounded-lg px-3 py-2.5 ${errors.dob ? 'border-red-500 bg-red-50/20' : 'border-gray-300'}`}>
 
-            <FaCalendarAlt className="text-gray-400 mr-2" />
+            <FaCalendarAlt className={errors.dob ? "text-red-400 mr-2" : "text-gray-400 mr-2"} />
 
             <input
               type="date"
@@ -167,6 +214,9 @@ function ExaminerLoginCard() {
             />
 
           </div>
+          {errors.dob && (
+            <p className="text-xs text-red-500 mt-1">{errors.dob}</p>
+          )}
 
         </div>
 
@@ -180,9 +230,9 @@ function ExaminerLoginCard() {
           Phone Number / Email
         </label>
 
-        <div className="mt-1 flex items-center border rounded-lg px-3 py-2.5">
+        <div className={`mt-1 flex items-center border rounded-lg px-3 py-2.5 ${errors.contact ? 'border-red-500 bg-red-50/20' : 'border-gray-300'}`}>
 
-          <FaEnvelope className="text-gray-400 mr-2" />
+          <FaEnvelope className={errors.contact ? "text-red-400 mr-2" : "text-gray-400 mr-2"} />
 
           <input
             type="text"
@@ -194,6 +244,9 @@ function ExaminerLoginCard() {
           />
 
         </div>
+        {errors.contact && (
+          <p className="text-xs text-red-500 mt-1">{errors.contact}</p>
+        )}
 
       </div>
 

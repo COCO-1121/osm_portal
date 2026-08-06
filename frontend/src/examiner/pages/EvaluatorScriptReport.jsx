@@ -1,3 +1,5 @@
+import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import "./EvaluatorScriptReport.css";
 import {
   Search,
@@ -7,50 +9,114 @@ import {
   Clock,
   CheckCircle2,
 } from "lucide-react";
+import apiClient from "../../shared/services/apiClient";
 
 function EvaluatorScriptReport() {
-  const reports = [
-    {
-      id: "670596651730",
-      subject: "Economics",
-      date: "18-02-2026",
-      status: "Completed",
-      maxMarks: 100,
-      marks: 82,
-      percentage: "82%",
-      time: "24 min",
-    },
-    {
-      id: "670596651731",
-      subject: "Economics",
-      date: "18-02-2026",
-      status: "Completed",
-      maxMarks: 100,
-      marks: 76,
-      percentage: "76%",
-      time: "21 min",
-    },
-    {
-      id: "670596651732",
-      subject: "Economics",
-      date: "17-02-2026",
-      status: "Pending",
-      maxMarks: 100,
-      marks: "--",
-      percentage: "--",
-      time: "--",
-    },
-    {
-      id: "670596651733",
-      subject: "Accountancy",
-      date: "16-02-2026",
-      status: "Completed",
-      maxMarks: 80,
-      marks: 65,
-      percentage: "81%",
-      time: "18 min",
-    },
-  ];
+  const navigate = useNavigate();
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("All Subjects");
+  const [selectedStatus, setSelectedStatus] = useState("All Status");
+
+  useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const response = await apiClient.get("/examiner/evaluator-report");
+        if (response.data && Array.isArray(response.data)) {
+          setReports(response.data);
+        } else if (response.data && Array.isArray(response.data.reports)) {
+          setReports(response.data.reports);
+        } else {
+          // Check local evaluation history
+          const stored = localStorage.getItem("evaluated_scripts_history");
+          setReports(stored ? JSON.parse(stored) : []);
+        }
+      } catch (err) {
+        // Fallback to local evaluation history
+        const stored = localStorage.getItem("evaluated_scripts_history");
+        setReports(stored ? JSON.parse(stored) : []);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReports();
+  }, []);
+
+  // Compute unique subjects dynamically
+  const uniqueSubjects = useMemo(() => {
+    const set = new Set();
+    reports.forEach((r) => {
+      if (r.subject) set.add(r.subject);
+    });
+    return Array.from(set);
+  }, [reports]);
+
+  // Compute filtered reports
+  const filteredReports = useMemo(() => {
+    return reports.filter((item) => {
+      const matchSearch =
+        (item.id || "").toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.subject || "").toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchSubject =
+        selectedSubject === "All Subjects" || item.subject === selectedSubject;
+
+      const matchStatus =
+        selectedStatus === "All Status" || item.status === selectedStatus;
+
+      return matchSearch && matchSubject && matchStatus;
+    });
+  }, [reports, searchTerm, selectedSubject, selectedStatus]);
+
+  // Calculate real metrics
+  const totalScriptsCount = reports.length;
+  const completedCount = reports.filter((r) => r.status === "Completed").length;
+  const pendingCount = reports.filter((r) => r.status === "Pending").length;
+
+  const avgPercentage = useMemo(() => {
+    const completedList = reports.filter((r) => r.status === "Completed" && r.marks !== undefined && r.maxMarks);
+    if (completedList.length === 0) return 0;
+    const totalPerc = completedList.reduce((acc, curr) => {
+      const numMarks = parseFloat(curr.marks) || 0;
+      const numMax = parseFloat(curr.maxMarks) || 100;
+      return acc + (numMarks / numMax) * 100;
+    }, 0);
+    return Math.round(totalPerc / completedList.length);
+  }, [reports]);
+
+  // Handle Export Excel / CSV
+  const handleExportCSV = () => {
+    if (filteredReports.length === 0) {
+      alert("No data available to export.");
+      return;
+    }
+
+    const headers = ["Script ID", "Subject", "Date", "Status", "Maximum", "Marks", "Percentage", "Time"];
+    const rows = filteredReports.map((r) => [
+      r.id || "",
+      r.subject || "",
+      r.date || "",
+      r.status || "",
+      r.maxMarks || "",
+      r.marks || "",
+      r.percentage || "",
+      r.time || ""
+    ]);
+
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Evaluator_Script_Report_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="script-report-page">
@@ -69,7 +135,7 @@ function EvaluatorScriptReport() {
 
         </div>
 
-        <button className="export-btn">
+        <button className="export-btn" onClick={handleExportCSV}>
 
           <Download size={18} />
 
@@ -89,7 +155,7 @@ function EvaluatorScriptReport() {
 
           <h3>Total Scripts</h3>
 
-          <h2>150</h2>
+          <h2>{totalScriptsCount}</h2>
 
         </div>
 
@@ -99,7 +165,7 @@ function EvaluatorScriptReport() {
 
           <h3>Completed</h3>
 
-          <h2>126</h2>
+          <h2>{completedCount}</h2>
 
         </div>
 
@@ -109,7 +175,7 @@ function EvaluatorScriptReport() {
 
           <h3>Pending</h3>
 
-          <h2>24</h2>
+          <h2>{pendingCount}</h2>
 
         </div>
 
@@ -119,7 +185,7 @@ function EvaluatorScriptReport() {
 
           <h3>Average Marks</h3>
 
-          <h2>74%</h2>
+          <h2>{avgPercentage}%</h2>
 
         </div>
 
@@ -135,28 +201,35 @@ function EvaluatorScriptReport() {
 
           <input
             type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search Script ID..."
           />
 
         </div>
 
-        <select>
+        <select
+          value={selectedSubject}
+          onChange={(e) => setSelectedSubject(e.target.value)}
+        >
 
-          <option>All Subjects</option>
-
-          <option>Economics</option>
-
-          <option>Accountancy</option>
+          <option value="All Subjects">All Subjects</option>
+          {uniqueSubjects.map((sub) => (
+            <option key={sub} value={sub}>{sub}</option>
+          ))}
 
         </select>
 
-        <select>
+        <select
+          value={selectedStatus}
+          onChange={(e) => setSelectedStatus(e.target.value)}
+        >
 
-          <option>All Status</option>
+          <option value="All Status">All Status</option>
 
-          <option>Completed</option>
+          <option value="Completed">Completed</option>
 
-          <option>Pending</option>
+          <option value="Pending">Pending</option>
 
         </select>
 
@@ -196,51 +269,68 @@ function EvaluatorScriptReport() {
 
           <tbody>
 
-            {reports.map((item) => (
-
-              <tr key={item.id}>
-
-                <td>{item.id}</td>
-
-                <td>{item.subject}</td>
-
-                <td>{item.date}</td>
-
-                <td>
-
-                  <span
-                    className={
-                      item.status === "Completed"
-                        ? "badge completed"
-                        : "badge pending"
-                    }
-                  >
-                    {item.status}
-                  </span>
-
+            {loading ? (
+              <tr>
+                <td colSpan="9" className="py-8 text-center text-gray-500">
+                  Loading evaluation report...
                 </td>
-
-                <td>{item.maxMarks}</td>
-
-                <td>{item.marks}</td>
-
-                <td>{item.percentage}</td>
-
-                <td>{item.time}</td>
-
-                <td>
-
-                  <button className="action-btn">
-
-                    <Eye size={18} />
-
-                  </button>
-
-                </td>
-
               </tr>
+            ) : filteredReports.length === 0 ? (
+              <tr>
+                <td colSpan="9" className="py-8 text-center text-gray-400">
+                  No evaluated script records found.
+                </td>
+              </tr>
+            ) : (
+              filteredReports.map((item) => (
 
-            ))}
+                <tr key={item.id}>
+
+                  <td>{item.id}</td>
+
+                  <td>{item.subject}</td>
+
+                  <td>{item.date}</td>
+
+                  <td>
+
+                    <span
+                      className={
+                        item.status === "Completed"
+                          ? "badge completed"
+                          : "badge pending"
+                      }
+                    >
+                      {item.status}
+                    </span>
+
+                  </td>
+
+                  <td>{item.maxMarks || 100}</td>
+
+                  <td>{item.marks !== undefined ? item.marks : "--"}</td>
+
+                  <td>{item.percentage || "--"}</td>
+
+                  <td>{item.time || "--"}</td>
+
+                  <td>
+
+                    <button
+                      className="action-btn"
+                      onClick={() => navigate(`/examiner/evaluation/${item.id}`)}
+                    >
+
+                      <Eye size={18} />
+
+                    </button>
+
+                  </td>
+
+                </tr>
+
+              ))
+            )}
 
           </tbody>
 
