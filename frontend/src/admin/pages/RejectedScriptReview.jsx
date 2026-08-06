@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 
 import AdminLayout from "../../shared/layouts/AdminLayout";
-import ScriptDetailsCard from "../../examiner/components/ScriptDetailsCard";
+import ScriptDetailsCard from "../../admin/components/ScriptDetailsCard";
 import PDFViewer from "../../examiner/components/PDFViewer";
-import ReviewActions from "../../examiner/components/ReviewActions";
+import ReviewActions from "../../admin/components/ReviewActions";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 

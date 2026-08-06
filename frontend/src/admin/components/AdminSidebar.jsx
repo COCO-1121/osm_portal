@@ -6,6 +6,7 @@ import {
   FaUsers,
   FaHistory,
   FaUserCog,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 
 import { NavLink, useNavigate } from "react-router-dom";
@@ -74,6 +75,21 @@ function AdminSidebar() {
         >
           <FaFileAlt className="text-base flex-shrink-0" />
           <span>Rejected Scripts</span>
+        </NavLink>
+
+        {/* UFM Cases */}
+        <NavLink
+          to="/admin/ufm-cases"
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-3.5 py-2.5 rounded-xl no-underline transition text-sm font-medium ${
+              isActive
+                ? "text-blue-600 bg-blue-50 font-semibold"
+                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+            }`
+          }
+        >
+          <FaExclamationTriangle className="text-base flex-shrink-0" />
+          <span>UFM Cases</span>
         </NavLink>
 
         {/* Examiner Management */}

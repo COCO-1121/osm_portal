@@ -2,6 +2,62 @@ import { useMemo, useState } from "react";
 import { FaSearch } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
+const STANDARD_REJECTION_REASONS = [
+  "Improper Scanning",
+  "Answer Book of different Subject",
+  "Medium of Answer Book is different",
+  "Missing Pages",
+  "Same page Scan twice",
+  "Illegible Handwriting / Blurred Image",
+  "Others",
+];
+
+function formatReason(reason) {
+  if (!reason) return "N/A";
+  let r = reason
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  if (r === "Missing Page") return "Missing Pages";
+  return r;
+}
+
+function matchesRejectionReason(scriptReason = "", selectedFilter = "") {
+  if (!selectedFilter || selectedFilter === "All Reasons") return true;
+
+  const scriptNorm = formatReason(scriptReason).toLowerCase().trim();
+  const selNorm = selectedFilter.toLowerCase().trim();
+
+  if (scriptNorm === selNorm) return true;
+
+  // Smart merge: "missing page" / "missing pages"
+  if (
+    selNorm.includes("missing page") &&
+    scriptNorm.includes("missing page")
+  ) {
+    return true;
+  }
+
+  // Smart merge: "illegible handwriting" / "blurred image"
+  if (selNorm.includes("illegible") || selNorm.includes("blurred")) {
+    if (
+      scriptNorm.includes("illegible") ||
+      scriptNorm.includes("blurred") ||
+      scriptNorm.includes("handwriting")
+    ) {
+      return true;
+    }
+  }
+
+  // Smart merge: "different subject"
+  if (selNorm.includes("subject") && scriptNorm.includes("subject")) {
+    return true;
+  }
+
+  // Substring fallback
+  return scriptNorm.includes(selNorm) || selNorm.includes(scriptNorm);
+}
+
 function RejectedTable({ scripts = [] }) {
   const navigate = useNavigate();
 
@@ -20,25 +76,23 @@ function RejectedTable({ scripts = [] }) {
     return statusMap[status] || status;
   };
 
-  // Convert backend rejection reason values into readable UI text
-  const formatReason = (reason) => {
-    if (!reason) return "N/A";
-
-    return reason
-      .replaceAll("_", " ")
-      .toLowerCase()
-      .replace(/\b\w/g, (letter) => letter.toUpperCase());
-  };
-
-  // Get unique rejection reasons from real API data
-  const rejectionReasons = useMemo(() => {
-    return [
-      ...new Set(
-        scripts
-          .map((script) => script.rejection_reason)
-          .filter(Boolean)
-      ),
-    ];
+  // Smart merged list of rejection reasons for dropdown
+  const rejectionReasonsList = useMemo(() => {
+    const list = [...STANDARD_REJECTION_REASONS];
+    scripts.forEach((s) => {
+      if (s.rejection_reason) {
+        const formatted = formatReason(s.rejection_reason);
+        const alreadyCovered = list.some(
+          (r) =>
+            r.toLowerCase().trim() === formatted.toLowerCase().trim() ||
+            matchesRejectionReason(s.rejection_reason, r)
+        );
+        if (!alreadyCovered) {
+          list.push(formatted);
+        }
+      }
+    });
+    return list;
   }, [scripts]);
 
   // Search and filter real API data
@@ -52,28 +106,21 @@ function RejectedTable({ scripts = [] }) {
         !search ||
         script.barcode?.toLowerCase().includes(search) ||
         script.examiner_id?.toLowerCase().includes(search) ||
-        script.centre_id?.toLowerCase().includes(search);
+        script.centre_id?.toLowerCase().includes(search) ||
+        script.subject?.toLowerCase().includes(search) ||
+        formatReason(script.rejection_reason).toLowerCase().includes(search);
 
       const matchesStatus =
-        statusFilter === "All" ||
-        displayedStatus === statusFilter;
+        statusFilter === "All" || displayedStatus === statusFilter;
 
-      const matchesReason =
-        reasonFilter === "All Reasons" ||
-        script.rejection_reason === reasonFilter;
-
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesReason
+      const matchesReason = matchesRejectionReason(
+        script.rejection_reason,
+        reasonFilter
       );
+
+      return matchesSearch && matchesStatus && matchesReason;
     });
-  }, [
-    scripts,
-    searchTerm,
-    statusFilter,
-    reasonFilter,
-  ]);
+  }, [scripts, searchTerm, statusFilter, reasonFilter]);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 space-y-6">
@@ -116,12 +163,12 @@ function RejectedTable({ scripts = [] }) {
         <select
           value={reasonFilter}
           onChange={(event) => setReasonFilter(event.target.value)}
-          className="border border-gray-300 rounded-lg px-3.5 py-2 text-sm bg-white text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer"
+          className="border border-gray-300 rounded-lg px-3.5 py-2 text-sm bg-white text-gray-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer max-w-[280px] truncate"
         >
           <option value="All Reasons">All Reasons</option>
-          {rejectionReasons.map((reason) => (
+          {rejectionReasonsList.map((reason) => (
             <option key={reason} value={reason}>
-              {formatReason(reason)}
+              {reason}
             </option>
           ))}
         </select>

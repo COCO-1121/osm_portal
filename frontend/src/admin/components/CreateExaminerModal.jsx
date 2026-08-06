@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaEye, FaEyeSlash } from "react-icons/fa";
 import { createExaminer } from "../services/examinerService.jsx";
 
 function CreateExaminerModal({ onClose, onSuccess }) {
+  const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({
     user_id: "",
     name: "",
@@ -139,15 +140,35 @@ function CreateExaminerModal({ onClose, onSuccess }) {
                 {item.label}
               </label>
 
-              <input
-                type={item.type}
-                autoComplete={item.type === "password" ? "new-password" : "off"}
-                value={form[item.field]}
-                onChange={(e) =>
-                  updateField(item.field, e.target.value)
-                }
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-600 outline-none"
-              />
+              <div className="relative flex items-center">
+                <input
+                  type={
+                    item.field === "password"
+                      ? showPassword
+                        ? "text"
+                        : "password"
+                      : item.type
+                  }
+                  autoComplete={item.type === "password" ? "new-password" : "off"}
+                  value={form[item.field]}
+                  onChange={(e) =>
+                    updateField(item.field, e.target.value)
+                  }
+                  className={`w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-600 outline-none ${
+                    item.field === "password" ? "pr-10" : ""
+                  }`}
+                />
+
+                {item.field === "password" && (
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 text-gray-400 hover:text-gray-600 cursor-pointer focus:outline-none"
+                  >
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                )}
+              </div>
 
               {errors[item.field] && (
                 <p className="text-red-500 text-sm mt-1">

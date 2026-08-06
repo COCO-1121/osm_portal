@@ -6,6 +6,7 @@ from app.models.script_rejection import ScriptRejection
 from app.models.admin_review_action import AdminReviewAction
 from app.models.audit_log import AuditLog
 from app.models.login_history import LoginHistory
+from app.models.ufm_case import UFMCase
 
 __all__ = [
     "Role",
@@ -13,4 +14,8 @@ __all__ = [
     "AuditLog",
     "LoginHistory",
     "ExaminerLoginLog",
+    "AnswerScript",
+    "ScriptRejection",
+    "AdminReviewAction",
+    "UFMCase",
 ]

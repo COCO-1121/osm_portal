@@ -13,6 +13,7 @@ from app.api.ADMIN_API.v1.admin.dashboard import router as admin_dashboard_route
 from app.api.ADMIN_API.v1.admin.audit_logs import router as admin_audit_logs_router
 from app.api.ADMIN_API.v1.admin.examiners import router as admin_examiners_router
 from app.api.ADMIN_API.v1.admin.rejections import router as admin_rejections_router
+from app.api.ADMIN_API.v1.admin.ufm_cases import router as admin_ufm_cases_router
 
 # Examiner Routers
 try:
@@ -98,6 +99,7 @@ app.include_router(auth_router)
 # Register Admin Routers
 app.include_router(admin_dashboard_router)
 app.include_router(admin_rejections_router)
+app.include_router(admin_ufm_cases_router)
 app.include_router(admin_examiners_router)
 app.include_router(admin_audit_logs_router)
 
@@ -223,6 +225,14 @@ def startup_event():
         logger.info("Sample rejections seeded successfully.")
     except Exception as e:
         logger.error(f"Failed to seed sample rejections: {str(e)}")
+
+    # Seed sample UFM cases (BC102341, BC102342, BC102343)
+    try:
+        from app.db.seed_ufm_cases import seed_ufm_cases
+        seed_ufm_cases()
+        logger.info("Sample UFM cases seeded successfully.")
+    except Exception as e:
+        logger.error(f"Failed to seed sample UFM cases: {str(e)}")
 
     # Run barcode fix & exam seeding
     fix_old_pending_records()

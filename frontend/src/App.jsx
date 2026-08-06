@@ -15,6 +15,8 @@ import CreateExaminer from './admin/pages/CreateExaminer';
 import ExaminerManagement from './admin/pages/ExaminerManagement';
 import RejectedScripts from './admin/pages/RejectedScripts';
 import RejectedScriptReview from './admin/pages/RejectedScriptReview';
+import UFMCases from './admin/pages/UFMCases';
+import UFMReview from './admin/pages/UFMReview';
 import CredentialManagement from './admin/pages/CredentialManagement';
 
 // Examiner Module Pages
@@ -63,30 +65,14 @@ function App() {
           <Route path="/admin/create-examiner" element={<CreateExaminer />} />
           <Route path="/admin/examiners" element={<ExaminerManagement />} />
 
-          <Route
-            path="/admin/rejected-review"
-            element={<RejectedScriptReview />}
-          />
-
-          <Route
-            path="/admin/rejected-review/:rejectionId"
-            element={<RejectedScriptReview />}
-          />
-
-          <Route
-            path="/admin/credentials"
-            element={<CredentialManagement />}
-          />
-
-          <Route
-            path="/admin/credential-management"
-            element={<CredentialManagement />}
-          />
-
-          <Route
-            path="/admin/rejected-scripts"
-            element={<RejectedScripts />}
-          />
+          <Route path="/admin/rejected-review" element={<RejectedScriptReview />} />
+          <Route path="/admin/rejected-review/:rejectionId" element={<RejectedScriptReview />} />
+          <Route path="/admin/ufm-cases" element={<UFMCases />} />
+          <Route path="/admin/ufm-review" element={<UFMReview />} />
+          <Route path="/admin/ufm-review/:ufmId" element={<UFMReview />} />
+          <Route path="/admin/credentials" element={<CredentialManagement />} />
+          <Route path="/admin/credential-management" element={<CredentialManagement />} />
+          <Route path="/admin/rejected-scripts" element={<RejectedScripts />} />
         </Route>
 
 

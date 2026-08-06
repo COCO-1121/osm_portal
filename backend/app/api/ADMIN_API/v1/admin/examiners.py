@@ -265,49 +265,68 @@ def update_examiner(
             detail="Examiner not found.",
         )
 
+    target_rec = admin_rec or exam_rec
     target_ids = [u.id for u in [admin_rec, exam_rec] if u]
 
-    # Check duplicates in examiner_db and admin db
+    original_user_id = target_rec.user_id
+    original_email = target_rec.email
+    original_phone = target_rec.phone
+
+    # Check duplicates in examiner_db and admin db ONLY for fields that were modified
     for check_ssn in [examiner_db, db]:
         if check_ssn:
-            if payload.user_id:
+            if payload.user_id and payload.user_id != original_user_id:
                 existing = check_ssn.scalar(
                     select(User).where(
                         User.user_id == payload.user_id,
                         User.id.not_in(target_ids) if target_ids else True,
                     )
                 )
-                if existing and (existing.user_id != (admin_rec or exam_rec).user_id):
+                if existing:
                     raise HTTPException(
                         status_code=status.HTTP_409_CONFLICT,
                         detail=f"Login User ID '{payload.user_id}' already exists.",
                     )
 
-            if payload.email:
+            if payload.email and payload.email != original_email:
                 existing = check_ssn.scalar(
                     select(User).where(
                         User.email == payload.email,
                         User.id.not_in(target_ids) if target_ids else True,
                     )
                 )
-                if existing and existing.id not in target_ids:
+                if existing:
                     raise HTTPException(
                         status_code=status.HTTP_409_CONFLICT,
                         detail=f"Email address '{payload.email}' already exists.",
                     )
 
-            if payload.phone:
+            if payload.phone and payload.phone != original_phone:
                 existing = check_ssn.scalar(
                     select(User).where(
                         User.phone == payload.phone,
                         User.id.not_in(target_ids) if target_ids else True,
                     )
                 )
-                if existing and existing.id not in target_ids:
+                if existing:
                     raise HTTPException(
                         status_code=status.HTTP_409_CONFLICT,
                         detail=f"Phone number '{payload.phone}' already exists.",
                     )
+
+    target_rec = admin_rec or exam_rec
+
+    changes = []
+    if payload.user_id and payload.user_id != target_rec.user_id:
+        changes.append(f"User ID: {target_rec.user_id} -> {payload.user_id}")
+    if payload.name and payload.name != target_rec.name:
+        changes.append(f"Name: {target_rec.name} -> {payload.name}")
+    if payload.email and payload.email != target_rec.email:
+        changes.append(f"Email: {target_rec.email} -> {payload.email}")
+    if payload.phone and payload.phone != target_rec.phone:
+        changes.append(f"Phone: {target_rec.phone or 'N/A'} -> {payload.phone}")
+    if payload.is_active is not None and payload.is_active != target_rec.is_active:
+        changes.append(f"Status: {'Active' if target_rec.is_active else 'Inactive'} -> {'Active' if payload.is_active else 'Inactive'}")
 
     for rec, ssn in [(admin_rec, db), (exam_rec, examiner_db)]:
         if rec and ssn:
@@ -318,7 +337,20 @@ def update_examiner(
             rec.is_active = payload.is_active
             ssn.commit()
 
-    target_rec = admin_rec or exam_rec
+    if changes:
+        target_details = f"{payload.user_id} ({', '.join(changes)})"
+        if len(target_details) > 250:
+            target_details = target_details[:247] + "..."
+    else:
+        target_details = payload.user_id
+
+    create_audit_log(
+        db=db,
+        admin=current_admin,
+        action="Updated Examiner",
+        target=target_details,
+    )
+
     return ExaminerResponse(
         id=str(target_rec.id),
         user_id=target_rec.user_id,

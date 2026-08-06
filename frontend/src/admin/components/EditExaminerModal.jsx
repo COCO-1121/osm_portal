@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaTimes } from "react-icons/fa";
+import { FaTimes, FaEye, FaEyeSlash } from "react-icons/fa";
 
 import {
   updateExaminer,
@@ -21,6 +21,7 @@ function EditExaminerModal({
   });
 
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
 
@@ -230,22 +231,32 @@ function EditExaminerModal({
 
             <div className="flex gap-3 mt-2">
 
-              <input
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                placeholder="New Password (min 8 characters)"
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
-                className="flex-1 border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-600"
-              />
+              <div className="flex-1 relative flex items-center">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={password}
+                  placeholder="New Password (min 8 characters)"
+                  onChange={(e) =>
+                    setPassword(e.target.value)
+                  }
+                  className="w-full border border-gray-300 rounded-lg p-3 pr-10 outline-none focus:ring-2 focus:ring-blue-600"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 text-gray-400 hover:text-gray-600 cursor-pointer focus:outline-none"
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
 
               <button
                 type="button"
                 disabled={loading}
                 onClick={handlePasswordReset}
-                className="bg-yellow-500 hover:bg-yellow-600 text-white px-5 rounded-lg font-medium cursor-pointer"
+                className="bg-yellow-500 hover:bg-yellow-600 text-white px-5 rounded-lg font-medium cursor-pointer flex-shrink-0"
               >
                 Update Password
               </button>

@@ -8,6 +8,8 @@ import {
   FaPhone,
   FaLock,
   FaInfoCircle,
+  FaEye,
+  FaEyeSlash,
 } from "react-icons/fa";
 
 function AdminLoginCard() {
@@ -20,6 +22,7 @@ function AdminLoginCard() {
     password: "",
   });
 
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -194,7 +197,7 @@ function AdminLoginCard() {
           <FaLock className="text-gray-400 mr-2" />
 
           <input
-            type="password"
+            type={showPassword ? "text" : "password"}
             name="password"
             value={formData.password}
             onChange={handleChange}
@@ -203,6 +206,14 @@ function AdminLoginCard() {
             className="w-full outline-none text-sm"
             disabled={isLoading}
           />
+
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer ml-2"
+          >
+            {showPassword ? <FaEyeSlash /> : <FaEye />}
+          </button>
         </div>
       </div>
 

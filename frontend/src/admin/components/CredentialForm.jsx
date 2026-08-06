@@ -1,4 +1,10 @@
+import { useState } from "react";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+
 function CredentialForm() {
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   return (
     <div className="bg-white rounded-xl shadow border border-gray-200 p-6">
 
@@ -59,11 +65,20 @@ function CredentialForm() {
             New Password
           </label>
 
-          <input
-            type="password"
-            placeholder="Enter new password"
-            className="w-full mt-2 border rounded-lg p-3"
-          />
+          <div className="relative flex items-center mt-2">
+            <input
+              type={showNewPassword ? "text" : "password"}
+              placeholder="Enter new password"
+              className="w-full border rounded-lg p-3 pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowNewPassword(!showNewPassword)}
+              className="absolute right-3 text-gray-400 hover:text-gray-600 cursor-pointer focus:outline-none"
+            >
+              {showNewPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
+          </div>
         </div>
 
         <div>
@@ -71,11 +86,20 @@ function CredentialForm() {
             Confirm Password
           </label>
 
-          <input
-            type="password"
-            placeholder="Confirm password"
-            className="w-full mt-2 border rounded-lg p-3"
-          />
+          <div className="relative flex items-center mt-2">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Confirm password"
+              className="w-full border rounded-lg p-3 pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 text-gray-400 hover:text-gray-600 cursor-pointer focus:outline-none"
+            >
+              {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
+          </div>
         </div>
 
       </div>

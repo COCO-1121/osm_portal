@@ -32,7 +32,7 @@ function ImageViewer({
   isMarkingActive,
   activeTool
 }) {
-  const [zoom, setZoom] = useState(0.85); 
+  const [zoom, setZoom] = useState(0.85);
   const [rotation, setRotation] = useState(0);
   const [hoveredStampId, setHoveredStampId] = useState(null);
 
@@ -84,15 +84,15 @@ function ImageViewer({
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <h3 style={{ margin: 0 }}>Answer Sheet Viewer</h3>
           {isMarkingActive && (
-            <span 
-              style={{ 
-                backgroundColor: "#e8f5e9", 
-                color: "#2e7d32", 
+            <span
+              style={{
+                backgroundColor: "#e8f5e9",
+                color: "#2e7d32",
                 border: "1px solid #c8e6c9",
-                borderRadius: "12px", 
-                padding: "2px 8px", 
-                fontSize: "10px", 
-                fontWeight: "bold" 
+                borderRadius: "12px",
+                padding: "2px 8px",
+                fontSize: "10px",
+                fontWeight: "bold"
               }}
             >
               ● Marking Active (Q{activeQuestion?.id})
@@ -111,11 +111,11 @@ function ImageViewer({
       </div>
 
       {/* Answer Sheet Container */}
-      <div 
-        className="viewer-body" 
-        style={{ 
+      <div
+        className="viewer-body"
+        style={{
           flex: 1,
-          overflow: "auto", 
+          overflow: "auto",
           position: "relative",
           display: "flex",
           justifyContent: "center",
@@ -124,8 +124,8 @@ function ImageViewer({
           backgroundColor: "#eef2f7"
         }}
       >
-        <div 
-          className="paper" 
+        <div
+          className="paper"
           onClick={onImageClick}
           style={{
             transform: `scale(${zoom}) rotate(${rotation}deg)`,
@@ -144,8 +144,8 @@ function ImageViewer({
             overflow: "visible"
           }}
         >
-          <img 
-            src={`/sheets/page${currentPage <= 5 ? currentPage : (currentPage % 5) + 1}.png`} 
+          <img
+            src={`/sheets/page${currentPage <= 5 ? currentPage : (currentPage % 5) + 1}.png`}
             alt={`Answer sheet page ${currentPage}`}
             style={{
               width: "100%",
@@ -160,12 +160,12 @@ function ImageViewer({
           {/* Render Page Stamps */}
           {pageStamps.map((stamp) => {
             const isHovered = hoveredStampId === stamp.id;
-            
+
             let icon = null;
             let text = "";
             let color = "#2e7d32";
             let bg = "rgba(255, 255, 255, 0.95)";
-            
+
             if (stamp.type === 'mark') {
               icon = <CheckCircle size={12} color="#2e7d32" style={{ fill: "#e8f5e9" }} />;
               text = stamp.mark;
@@ -247,7 +247,7 @@ function ImageViewer({
           {stampedQIdsOnPage.map((qId, idx) => {
             const qStamps = stamps.filter((s) => s.qId === qId);
             const totalScore = qStamps.reduce((sum, s) => sum + s.mark, 0);
-            
+
             const formulaStr = qStamps
               .map((s) => s.mark)
               .join(" + ");
@@ -307,7 +307,7 @@ function ImageViewer({
           {dialogState.visible && activeQuestion && (
             <div
               className="floating-dialog-box"
-              onClick={(e) => e.stopPropagation()} 
+              onClick={(e) => e.stopPropagation()}
               style={{
                 position: "absolute",
                 left: `${dialogState.x}px`,
@@ -327,12 +327,12 @@ function ImageViewer({
                 Select Mark :
               </div>
 
-              <div 
-                style={{ 
-                  border: "1px solid #ccc", 
-                  borderRadius: "3px", 
-                  padding: "4px 6px", 
-                  color: "#d32f2f", 
+              <div
+                style={{
+                  border: "1px solid #ccc",
+                  borderRadius: "3px",
+                  padding: "4px 6px",
+                  color: "#d32f2f",
                   fontWeight: "bold",
                   display: "flex",
                   justifyContent: "space-between",
@@ -344,11 +344,11 @@ function ImageViewer({
                 <span>Q{activeQuestion.id} (Max: {activeQuestion.max})</span>
                 <span style={{ fontSize: "8px", color: "#666" }}>▼</span>
               </div>
-              
-              <div 
-                style={{ 
-                  maxHeight: "120px", 
-                  overflowY: "auto", 
+
+              <div
+                style={{
+                  maxHeight: "120px",
+                  overflowY: "auto",
                   border: "1px solid #eee",
                   borderRadius: "2px"
                 }}
@@ -384,9 +384,9 @@ function ImageViewer({
                   </div>
                 )}
               </div>
-              
+
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "4px" }}>
-                <button 
+                <button
                   onClick={() => setDialogState(prev => ({ ...prev, visible: false }))}
                   style={{
                     backgroundColor: "#f4f4f4",
@@ -406,8 +406,8 @@ function ImageViewer({
       </div>
 
       {/* Pages Bottom Strip */}
-      <div 
-        className="pages-strip" 
+      <div
+        className="pages-strip"
         style={{
           backgroundColor: "#f0f4f8",
           padding: "8px 10px",
@@ -423,7 +423,7 @@ function ImageViewer({
           const pageNum = i + 1;
           const isSelected = pageNum === currentPage;
           const isGraded = pageNum <= currentPage;
-          
+
           return (
             <div
               key={pageNum}
@@ -453,8 +453,8 @@ function ImageViewer({
 
       {/* Footer */}
       <div className="viewer-footer" style={{ borderTop: "none" }}>
-        <button 
-          className="page-btn" 
+        <button
+          className="page-btn"
           onClick={handlePrev}
           disabled={currentPage <= 1}
           style={{ opacity: currentPage <= 1 ? 0.5 : 1, cursor: currentPage <= 1 ? "not-allowed" : "pointer" }}
@@ -467,8 +467,8 @@ function ImageViewer({
           Page {currentPage} of {totalPages}
         </span>
 
-        <button 
-          className="page-btn" 
+        <button
+          className="page-btn"
           onClick={handleNext}
           disabled={currentPage >= totalPages}
           style={{ opacity: currentPage >= totalPages ? 0.5 : 1, cursor: currentPage >= totalPages ? "not-allowed" : "pointer" }}
