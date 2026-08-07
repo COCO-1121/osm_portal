@@ -18,8 +18,8 @@ def fix_engine_tables(engine, name):
             if inspector.has_table("users"):
                 columns = [col["name"] for col in inspector.get_columns("users")]
                 logger.info(f"[{name}] Found 'users' table with columns: {columns}")
-                if "user_id" not in columns:
-                    logger.info(f"[{name}] Missing 'user_id' column in 'users' table. Dropping table 'users'...")
+                if "user_id" not in columns or "dob" not in columns:
+                    logger.info(f"[{name}] Missing required columns in 'users' table. Dropping table 'users'...")
                     conn.execute(text("DROP TABLE IF EXISTS login_history CASCADE;"))
                     conn.execute(text("DROP TABLE IF EXISTS users CASCADE;"))
                     conn.commit()

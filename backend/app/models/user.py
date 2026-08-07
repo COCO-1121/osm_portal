@@ -4,6 +4,7 @@ from datetime import datetime
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, Date
 
 from app.db.database import Base
 
@@ -74,6 +75,10 @@ class User(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+    dob: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
     )
 
     role = relationship("Role")

@@ -2,6 +2,7 @@ import Navbar from "../../shared/components/Navbar";
 import ExaminerLoginCard from "../../shared/components/ExaminerLoginCard";
 import Footer from "../../shared/components/Footer";
 
+
 function ExaminerLoginPage() {
   return (
     <div className="min-h-screen flex flex-col bg-white">

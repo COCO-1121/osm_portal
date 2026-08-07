@@ -30,6 +30,7 @@ TEST_USERS = [
         "institute_id": "INST-001",
         "password": "Examiner@123",
         "role": "EXAMINER",
+         "dob": "1990-01-01",
     },
     {
         "user_id": "UPL001",
@@ -64,6 +65,10 @@ def seed_users(db):
         )
 
         if existing_user:
+    # Update DOB if it exists in TEST_USERS
+            if "dob" in user_data:
+                existing_user.dob = user_data["dob"]
+            db.commit()
             continue
 
         role = db.scalar(
@@ -85,6 +90,7 @@ def seed_users(db):
             email=user_data["email"],
             phone=user_data["phone"],
             institute_id=user_data["institute_id"],
+            dob=user_data.get("dob"),   
             password_hash=hash_password(
                 user_data["password"]
             ),
