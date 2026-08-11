@@ -32,7 +32,7 @@ function UploaderDashboardPage() {
     if (confirmed) {
       localStorage.removeItem("uploader_token");
       localStorage.removeItem("uploader_id");
-      navigate("/uploader-login");
+      navigate("/");
     }
   };
 

@@ -7,6 +7,7 @@ class CreateExaminerRequest(BaseModel):
     email: EmailStr
     phone: str = Field(..., min_length=10, max_length=15)
     password: str = Field(..., min_length=8)
+    dob: str | None = None
     institute_id: str | None = None
 
 class UpdateExaminerRequest(BaseModel):
@@ -14,6 +15,7 @@ class UpdateExaminerRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
     phone: str = Field(..., min_length=10, max_length=15)
+    dob: str | None = None
     is_active: bool = True
     
     
@@ -23,6 +25,7 @@ class ExaminerResponse(BaseModel):
     name: str
     email: str
     phone: str
+    dob: str | None = None
     institute_id: str | None = None
     is_active: bool
 

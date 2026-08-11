@@ -1,6 +1,15 @@
 import { FaEdit } from "react-icons/fa";
 import StatusBadge from "../../shared/components/StatusBadge";
 
+const formatDob = (dobStr) => {
+  if (!dobStr) return "—";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dobStr)) {
+    const [yyyy, mm, dd] = dobStr.split("-");
+    return `${dd}/${mm}/${yyyy}`;
+  }
+  return dobStr;
+};
+
 function ExaminerRow({ examiner, onEdit }) {
   return (
     <tr className="border-b last:border-b-0 hover:bg-blue-50 transition-colors duration-200">
@@ -32,6 +41,10 @@ function ExaminerRow({ examiner, onEdit }) {
 
       <td className="px-6 py-4 text-left">
         {examiner.phone}
+      </td>
+
+      <td className="px-6 py-4 text-left font-mono text-xs text-gray-600">
+        {formatDob(examiner.dob)}
       </td>
 
       <td className="px-6 py-4 text-left">

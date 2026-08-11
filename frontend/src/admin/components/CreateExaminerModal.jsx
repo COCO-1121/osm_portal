@@ -9,6 +9,7 @@ function CreateExaminerModal({ onClose, onSuccess }) {
     name: "",
     email: "",
     phone: "",
+    dob: "",
     password: "",
   });
 
@@ -45,6 +46,10 @@ function CreateExaminerModal({ onClose, onSuccess }) {
       e.phone = "Phone number is required.";
     }
 
+    if (!form.dob.trim()) {
+      e.dob = "Date of Birth is required.";
+    }
+
     if (!form.password.trim()) {
       e.password = "Password is required.";
     } else if (form.password.length < 8) {
@@ -63,6 +68,7 @@ function CreateExaminerModal({ onClose, onSuccess }) {
       name: "",
       email: "",
       phone: "",
+      dob: "",
       password: "",
     });
     setErrors({});
@@ -128,6 +134,11 @@ function CreateExaminerModal({ onClose, onSuccess }) {
               label: "Phone",
               field: "phone",
               type: "text",
+            },
+            {
+              label: "Date of Birth",
+              field: "dob",
+              type: "date",
             },
             {
               label: "Password",

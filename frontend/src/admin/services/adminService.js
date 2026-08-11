@@ -84,14 +84,22 @@ export async function changeAdminPassword(oldPassword, newPassword) {
   return data;
 }
 
-export async function getLoginHistory(page = 1, size = 10) {
+export async function getLoginHistory(page = 1, size = 10, startDate = "", endDate = "") {
   const token = localStorage.getItem("access_token");
 
   if (!token) {
     throw new Error("Authentication token not found.");
   }
 
-  const response = await fetch(`${API_URL}/api/v1/admin/login-history?page=${page}&size=${size}`, {
+  let url = `${API_URL}/api/v1/admin/login-history?page=${page}&size=${size}`;
+  if (startDate) {
+    url += `&start_date=${encodeURIComponent(startDate)}`;
+  }
+  if (endDate) {
+    url += `&end_date=${encodeURIComponent(endDate)}`;
+  }
+
+  const response = await fetch(url, {
     headers: {
       Accept: "application/json",
       Authorization: `Bearer ${token}`,

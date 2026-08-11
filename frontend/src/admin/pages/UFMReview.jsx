@@ -10,6 +10,7 @@ import {
   FaUserCheck,
   FaBuilding,
   FaBarcode,
+  FaCalendarAlt,
 } from "react-icons/fa";
 import AdminLayout from "../../shared/layouts/AdminLayout";
 import PDFViewer from "../../examiner/components/PDFViewer";
@@ -160,6 +161,14 @@ function UFMReview() {
     }
   };
 
+  const handleBack = () => {
+    if (window.history.state && window.history.state.idx > 0) {
+      navigate(-1);
+    } else {
+      navigate("/admin/ufm-cases");
+    }
+  };
+
   if (loading) {
     return (
       <AdminLayout title="Review UFM Case">
@@ -179,8 +188,8 @@ function UFMReview() {
           </div>
           <button
             type="button"
-            onClick={() => navigate("/admin/ufm-cases")}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition"
+            onClick={handleBack}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition cursor-pointer"
           >
             <FaArrowLeft /> Back to UFM Cases
           </button>
@@ -197,14 +206,15 @@ function UFMReview() {
       subtitle={`Case ID: ${ufmCase.ufm_id} | Barcode: ${ufmCase.barcode}`}
     >
       <div className="space-y-6">
-        {/* Back Link & Header Banner */}
-        <div className="flex justify-between items-center bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 shadow-sm">
+        {/* Persistent Sticky Top Header Bar with Back Button */}
+        <div className="sticky -top-8 z-30 bg-white/95 backdrop-blur-md border border-gray-200 rounded-2xl p-4 sm:p-5 shadow-sm flex items-center justify-between gap-4 transition">
           <button
             type="button"
-            onClick={() => navigate("/admin/ufm-cases")}
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-blue-700 text-sm font-semibold transition"
+            onClick={handleBack}
+            className="inline-flex items-center gap-2 text-gray-700 hover:text-blue-700 font-bold text-sm transition cursor-pointer"
           >
-            <FaArrowLeft /> Back to UFM Cases
+            <FaArrowLeft className="text-blue-600 text-base" />
+            <span>Back to UFM Cases</span>
           </button>
           <div>{getStatusBadge(ufmCase.status)}</div>
         </div>
@@ -272,13 +282,34 @@ function UFMReview() {
             </div>
 
             <div className="space-y-3 text-sm">
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  UFM Reason
-                </p>
-                <span className="inline-block mt-1 px-3 py-1 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg font-bold text-xs">
-                  {ufmCase.reason}
-                </span>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    UFM Reason
+                  </p>
+                  <span className="inline-block mt-1 px-3 py-1 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg font-bold text-xs">
+                    {ufmCase.reason}
+                  </span>
+                </div>
+
+                <div>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    UFM Raised Date
+                  </p>
+                  <p className="font-semibold text-gray-800 mt-1 flex items-center gap-1.5 text-xs sm:text-sm">
+                    <FaCalendarAlt className="text-gray-400" />
+                    {ufmCase.reported_at
+                      ? new Date(ufmCase.reported_at).toLocaleString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        })
+                      : "N/A"}
+                  </p>
+                </div>
               </div>
 
               <div>

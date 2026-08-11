@@ -43,9 +43,10 @@ function ExaminerTable({
           <thead className="bg-gray-100 border-b sticky top-0">
             <tr className="text-left text-gray-700">
               <th className="px-6 py-4 text-left font-semibold" style={{ width: '120px' }}>Login ID</th>
-              <th className="px-6 py-4 text-left font-semibold" style={{ width: '250px' }}>Examiner</th>
-              <th className="px-6 py-4 text-left font-semibold" style={{ width: '200px' }}>Email</th>
-              <th className="px-6 py-4 text-left font-semibold" style={{ width: '140px' }}>Phone</th>
+              <th className="px-6 py-4 text-left font-semibold" style={{ width: '220px' }}>Examiner</th>
+              <th className="px-6 py-4 text-left font-semibold" style={{ width: '180px' }}>Email</th>
+              <th className="px-6 py-4 text-left font-semibold" style={{ width: '130px' }}>Phone</th>
+              <th className="px-6 py-4 text-left font-semibold" style={{ width: '120px' }}>DOB</th>
               <th className="px-6 py-4 text-left font-semibold" style={{ width: '100px' }}>Status</th>
               <th className="px-6 py-4 text-center font-semibold" style={{ width: '100px' }}>Actions</th>
             </tr>

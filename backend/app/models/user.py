@@ -41,6 +41,11 @@ class User(Base):
         unique=True,
         nullable=True,
     )
+
+    dob: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
     
     institute_id: Mapped[str] = mapped_column(
         String(50),

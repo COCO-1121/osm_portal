@@ -17,6 +17,7 @@ function EditExaminerModal({
     name: "",
     email: "",
     phone: "",
+    dob: "",
     is_active: true,
   });
 
@@ -32,6 +33,7 @@ function EditExaminerModal({
         name: examiner.name || "",
         email: examiner.email || "",
         phone: examiner.phone || "",
+        dob: examiner.dob || "",
         is_active: examiner.is_active !== undefined ? examiner.is_active : true,
       });
     }
@@ -58,6 +60,7 @@ function EditExaminerModal({
         name: examiner.name || "",
         email: examiner.email || "",
         phone: examiner.phone || "",
+        dob: examiner.dob || "",
         is_active: examiner.is_active !== undefined ? examiner.is_active : true,
       });
       setPassword("");
@@ -73,6 +76,7 @@ function EditExaminerModal({
         name: form.name,
         email: form.email,
         phone: form.phone,
+        dob: form.dob,
         is_active: form.is_active !== undefined ? form.is_active : examiner?.is_active ?? true,
       };
 
@@ -213,6 +217,22 @@ function EditExaminerModal({
                 value={form.phone}
                 onChange={(e) =>
                   updateField("phone", e.target.value)
+                }
+                className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-600"
+              />
+
+            </div>
+
+            <div>
+
+              <label className="block mb-1 font-medium">Date of Birth</label>
+
+              <input
+                type="date"
+                autoComplete="off"
+                value={form.dob}
+                onChange={(e) =>
+                  updateField("dob", e.target.value)
                 }
                 className="w-full border border-gray-300 rounded-lg p-3 outline-none focus:ring-2 focus:ring-blue-600"
               />

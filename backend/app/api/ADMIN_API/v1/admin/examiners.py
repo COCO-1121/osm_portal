@@ -40,6 +40,7 @@ def create_examiner(
     print(f"  - Name:          '{payload.name}'")
     print(f"  - Email:         '{payload.email}'")
     print(f"  - Phone:         '{payload.phone}'")
+    print(f"  - Date of Birth: '{payload.dob}'")
     print(f"  - Password:      '{payload.password}'")
     print(f"  - Institute ID:  '{payload.institute_id or getattr(current_admin, 'institute_id', 'INST-001')}'")
     print("=" * 50 + "\n")
@@ -105,6 +106,7 @@ def create_examiner(
         name=payload.name,
         email=payload.email,
         phone=payload.phone,
+        dob=payload.dob,
         institute_id=examiner_institute_id,
         password_hash=hashed_pwd,
         role_id=examiner_role.id,
@@ -117,6 +119,7 @@ def create_examiner(
         name=payload.name,
         email=payload.email,
         phone=payload.phone,
+        dob=payload.dob,
         institute_id=examiner_institute_id,
         password_hash=hashed_pwd,
         role_id=admin_examiner_role.id,
@@ -154,6 +157,7 @@ def create_examiner(
         name=examiner.name,
         email=examiner.email,
         phone=examiner.phone,
+        dob=examiner.dob,
         institute_id=examiner.institute_id,
         is_active=examiner.is_active,
     )
@@ -205,6 +209,7 @@ def get_examiners(
             name=examiner.name,
             email=examiner.email,
             phone=examiner.phone,
+            dob=examiner.dob,
             institute_id=examiner.institute_id,
             is_active=examiner.is_active,
         )
@@ -237,6 +242,7 @@ def get_examiner_by_id(
         name=examiner.name,
         email=examiner.email,
         phone=examiner.phone,
+        dob=examiner.dob,
         institute_id=examiner.institute_id,
         is_active=examiner.is_active,
     )
@@ -325,6 +331,8 @@ def update_examiner(
         changes.append(f"Email: {target_rec.email} -> {payload.email}")
     if payload.phone and payload.phone != target_rec.phone:
         changes.append(f"Phone: {target_rec.phone or 'N/A'} -> {payload.phone}")
+    if payload.dob and payload.dob != target_rec.dob:
+        changes.append(f"DOB: {target_rec.dob or 'N/A'} -> {payload.dob}")
     if payload.is_active is not None and payload.is_active != target_rec.is_active:
         changes.append(f"Status: {'Active' if target_rec.is_active else 'Inactive'} -> {'Active' if payload.is_active else 'Inactive'}")
 
@@ -334,6 +342,7 @@ def update_examiner(
             rec.name = payload.name
             rec.email = payload.email
             rec.phone = payload.phone
+            rec.dob = payload.dob
             rec.is_active = payload.is_active
             ssn.commit()
 
@@ -357,6 +366,7 @@ def update_examiner(
         name=target_rec.name,
         email=target_rec.email,
         phone=target_rec.phone,
+        dob=target_rec.dob,
         institute_id=target_rec.institute_id,
         is_active=target_rec.is_active,
     )
@@ -455,6 +465,7 @@ def update_examiner_status(
         name=target_rec.name,
         email=target_rec.email,
         phone=target_rec.phone,
+        dob=target_rec.dob,
         institute_id=target_rec.institute_id,
         is_active=target_rec.is_active,
     )

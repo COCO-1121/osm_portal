@@ -8,6 +8,7 @@ const initialForm = {
   name: "",
   email: "",
   phone: "",
+  dob: "",
   password: "",
   institute_id: "",
 };
@@ -49,6 +50,9 @@ function CreateExaminer() {
     if (!form.phone.trim()) {
       e.phone = "Phone number is required.";
     }
+    if (!form.dob.trim()) {
+      e.dob = "Date of Birth is required.";
+    }
     if (!form.password.trim()) {
       e.password = "Password is required.";
     } else if (form.password.length < 8) {
@@ -71,6 +75,7 @@ function CreateExaminer() {
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
+        dob: form.dob.trim(),
         password: form.password,
         institute_id: form.institute_id.trim() || undefined,
       };
@@ -177,6 +182,22 @@ function CreateExaminer() {
                 />
                 {errors.phone && (
                   <p className="text-red-500 text-xs mt-1 font-medium">{errors.phone}</p>
+                )}
+              </div>
+
+              {/* Date of Birth */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Date of Birth <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={form.dob}
+                  onChange={(e) => updateField("dob", e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
+                />
+                {errors.dob && (
+                  <p className="text-red-500 text-xs mt-1 font-medium">{errors.dob}</p>
                 )}
               </div>
 

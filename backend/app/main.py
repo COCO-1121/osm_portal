@@ -208,6 +208,15 @@ def startup_event():
     except Exception as e:
         logger.error(f"Failed to create database tables: {str(e)}")
 
+    # Ensure dob column exists in users table across engines
+    for eng in [admin_engine, examiner_engine, uploader_engine]:
+        try:
+            with eng.connect() as conn:
+                conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS dob VARCHAR(20);"))
+                conn.commit()
+        except Exception as e:
+            logger.warning(f"Failed auto-migrate dob column: {e}")
+
     # Create osm_scan folder if it doesn't exist
     scan_folder = Path(getattr(settings, "OSM_SCAN_FOLDER", "osm_scan"))
     if not scan_folder.exists():

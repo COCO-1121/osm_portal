@@ -81,6 +81,15 @@ function FilterDropdown({ label, options, value, onChange }) {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const activeLabel = useMemo(() => {
+    if (!value) return "";
+    if (Array.isArray(options) && options.length > 0 && typeof options[0] === "object") {
+      const found = options.find((o) => o.value === value);
+      return found ? found.label : value;
+    }
+    return value;
+  }, [options, value]);
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -91,9 +100,9 @@ function FilterDropdown({ label, options, value, onChange }) {
           }`}
       >
         {label}
-        {value && (
+        {activeLabel && (
           <span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-xs text-white leading-none">
-            {value}
+            {activeLabel}
           </span>
         )}
         <FaChevronDown
@@ -102,59 +111,157 @@ function FilterDropdown({ label, options, value, onChange }) {
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+        <div className="absolute left-0 top-full z-50 mt-1 min-w-[170px] max-h-72 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg py-1">
           <button
             onClick={() => { onChange(""); setOpen(false); }}
             className={`w-full px-4 py-2 text-left text-sm ${!value ? "bg-blue-50 font-semibold text-blue-700" : "text-gray-600 hover:bg-gray-50"}`}
           >
             All
           </button>
-          {options.map((opt) => (
-            <button
-              key={opt}
-              onClick={() => { onChange(opt); setOpen(false); }}
-              className={`w-full px-4 py-2 text-left text-sm ${value === opt ? "bg-blue-50 font-semibold text-blue-700" : "text-gray-600 hover:bg-gray-50"}`}
-            >
-              {opt}
-            </button>
-          ))}
+          {options.map((opt) => {
+            const isObj = typeof opt === "object";
+            const optLabel = isObj ? opt.label : opt;
+            const optVal = isObj ? opt.value : opt;
+            const isSelected = value === optVal || value === optLabel;
+
+            return (
+              <button
+                key={optVal}
+                onClick={() => { onChange(optVal); setOpen(false); }}
+                className={`w-full px-4 py-2 text-left text-sm ${isSelected ? "bg-blue-50 font-semibold text-blue-700" : "text-gray-600 hover:bg-gray-50"}`}
+              >
+                {optLabel}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
-// ─── Date range filter ─────────────────────────────────────────────────────
-const DATE_PRESETS = [
-  { label: "Today", value: "today" },
-  { label: "Yesterday", value: "yesterday" },
-  { label: "Last 7 days", value: "7d" },
-  { label: "Last 30 days", value: "30d" },
-  { label: "All time", value: "" },
-];
+// ─── Dynamic Date Range Generator ──────────────────────────────────────────
+function generateDynamicDateOptions(logs) {
+  const now = new Date();
+  const options = [
+    { label: "Today", value: "today" },
+    { label: "Yesterday", value: "yesterday" },
+  ];
+
+  if (!logs || logs.length === 0) {
+    options.push(
+      { label: "Last 7 days", value: "7d" },
+      { label: "Last 30 days", value: "30d" }
+    );
+    return options;
+  }
+
+  const timestamps = logs
+    .map((l) => new Date(l.timestamp).getTime())
+    .filter((t) => !isNaN(t));
+
+  if (timestamps.length === 0) {
+    options.push(
+      { label: "Last 7 days", value: "7d" },
+      { label: "Last 30 days", value: "30d" }
+    );
+    return options;
+  }
+
+  const earliestTime = Math.min(...timestamps);
+  const diffMs = now.getTime() - earliestTime;
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays >= 2) {
+    options.push({ label: "Last 7 days", value: "7d" });
+  }
+
+  if (diffDays >= 7) {
+    options.push({ label: "Last 30 days", value: "30d" });
+  }
+
+  if (diffDays >= 30) {
+    options.push({ label: "Last Month", value: "last_month" });
+  }
+
+  if (diffDays >= 60) {
+    options.push({ label: "Last 3 Months", value: "3m" });
+  }
+
+  if (diffDays >= 180) {
+    options.push({ label: "Last 6 Months", value: "6m" });
+  }
+
+  // Collect unique years from logs in descending order
+  const years = [
+    ...new Set(
+      logs
+        .map((l) => {
+          const d = new Date(l.timestamp);
+          return isNaN(d.getTime()) ? null : d.getFullYear();
+        })
+        .filter(Boolean)
+    ),
+  ].sort((a, b) => b - a);
+
+  years.forEach((yr) => {
+    options.push({ label: `${yr}`, value: `year_${yr}` });
+  });
+
+  return options;
+}
 
 function datePresetFilter(log, preset) {
   if (!preset) return true;
   const now = new Date();
   const date = new Date(log.timestamp);
+  if (isNaN(date.getTime())) return false;
+
   const startOf = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
   if (preset === "today") return date >= startOf(now);
+
   if (preset === "yesterday") {
     const yest = new Date(now);
     yest.setDate(yest.getDate() - 1);
     return date >= startOf(yest) && date < startOf(now);
   }
+
   if (preset === "7d") {
     const d = new Date(now);
     d.setDate(d.getDate() - 7);
     return date >= d;
   }
+
   if (preset === "30d") {
     const d = new Date(now);
     d.setDate(d.getDate() - 30);
     return date >= d;
   }
+
+  if (preset === "last_month") {
+    const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const startOfCurrMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    return date >= startOfPrevMonth && date < startOfCurrMonth;
+  }
+
+  if (preset === "3m") {
+    const d = new Date(now);
+    d.setMonth(d.getMonth() - 3);
+    return date >= d;
+  }
+
+  if (preset === "6m") {
+    const d = new Date(now);
+    d.setMonth(d.getMonth() - 6);
+    return date >= d;
+  }
+
+  if (preset.startsWith("year_")) {
+    const targetYear = parseInt(preset.replace("year_", ""), 10);
+    return date.getFullYear() === targetYear;
+  }
+
   return true;
 }
 
@@ -274,6 +381,13 @@ function AuditLogs() {
     () => [...new Set(logs.map((l) => l.action).filter(Boolean))].sort(),
     [logs]
   );
+
+  // dynamically generated date filter options based on log timestamps
+  const dateOptions = useMemo(
+    () => generateDynamicDateOptions(logs),
+    [logs]
+  );
+
   // filtered set
   const filteredLogs = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -380,20 +494,12 @@ function AuditLogs() {
                   onChange={setActionFilter}
                 />
 
-
-                {/* Date filter */}
+                {/* Date filter (dynamic) */}
                 <FilterDropdown
                   label="Date"
-                  options={DATE_PRESETS.filter((p) => p.value).map((p) => p.label)}
-                  value={
-                    dateFilter
-                      ? DATE_PRESETS.find((p) => p.value === dateFilter)?.label || ""
-                      : ""
-                  }
-                  onChange={(label) => {
-                    const found = DATE_PRESETS.find((p) => p.label === label);
-                    setDateFilter(found ? found.value : "");
-                  }}
+                  options={dateOptions}
+                  value={dateFilter}
+                  onChange={setDateFilter}
                 />
 
                 {/* Refresh */}
@@ -446,7 +552,7 @@ function AuditLogs() {
 
                   {dateFilter && (
                     <span className="flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-                      {DATE_PRESETS.find((p) => p.value === dateFilter)?.label}
+                      {dateOptions.find((p) => p.value === dateFilter)?.label || dateFilter}
                       <button onClick={() => setDateFilter("")}><FaTimes className="text-[10px]" /></button>
                     </span>
                   )}

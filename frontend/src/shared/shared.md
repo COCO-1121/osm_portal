@@ -88,3 +88,17 @@ This document tracks all changes made to primary entry-point files and secondary
   - `backend/app/main.py`: Imported `admin_ufm_cases_router` from `app.api.ADMIN_API.v1.admin.ufm_cases`, registered router on FastAPI `app`, and added `seed_ufm_cases()` (BC102341, BC102342, BC102343) to startup event.
   - `frontend/src/App.jsx`: Imported `UFMCases` and `UFMReview` pages and registered routes `/admin/ufm-cases`, `/admin/ufm-review`, and `/admin/ufm-review/:ufmId` under `AdminProtectedRoute`.
 
+### [2026-08-07] Primary Entry-Point Startup Schema Auto-Migration for DOB
+- **Target File**: `backend/app/main.py`
+- **Reason**: Automatically ensure `dob` (Date of Birth) column exists and is committed in `users` table across all database engines on startup.
+- **Changes Applied**:
+  - `backend/app/main.py`: Added automatic schema verification and execution of `ALTER TABLE users ADD COLUMN IF NOT EXISTS dob VARCHAR(20);` in `startup_event()`.
+
+### [2026-08-08] Uploader Module Logout Navigation Update
+- **Target Files**: `frontend/src/uploader/pages/UploaderDashboardPage.jsx`, `frontend/src/uploader/pages/UploadedCopies.jsx`, `frontend/src/uploader/pages/RejectedQueue.jsx`, `frontend/src/uploader/pages/PreviewPage.jsx`
+- **Reason**: Redirect users to the main Role Selection Page (`/`) showing Uploader, Examiner, and Admin options upon confirming logout in the Uploader module.
+- **Changes Applied**:
+  - Updated `handleLogout` functions in `UploaderDashboardPage.jsx`, `UploadedCopies.jsx`, `RejectedQueue.jsx`, and `PreviewPage.jsx` to clear localStorage session tokens and navigate to `/`.
+
+
+

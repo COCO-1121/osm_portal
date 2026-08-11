@@ -39,7 +39,9 @@ function RejectedQueue() {
   const handleLogout = () => {
     const confirmed = window.confirm("Are you sure you want to logout?");
     if (confirmed) {
-      navigate("/uploader-login");
+      localStorage.removeItem("uploader_token");
+      localStorage.removeItem("uploader_id");
+      navigate("/");
     }
   };
 

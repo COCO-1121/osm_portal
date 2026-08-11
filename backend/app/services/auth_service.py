@@ -3,6 +3,15 @@ from sqlalchemy.orm import Session
 from app.schemas.auth import LoginRequest
 from app.utils.password import verify_password
 
+def normalize_dob(dob_str: str | None) -> str | None:
+    if not dob_str:
+        return None
+    dob_str = dob_str.strip()
+    if len(dob_str) == 10 and dob_str[4] == '-' and dob_str[7] == '-':
+        parts = dob_str.split('-')
+        return f"{parts[2]}/{parts[1]}/{parts[0]}"
+    return dob_str
+
 def login_user(db: Session, data: LoginRequest):
     print("\n" + "=" * 60)
     print("🔑 DEBUG: EXAMINER LOGIN FORM INPUTS RECEIVED FROM TEXTBOXES")
@@ -55,11 +64,21 @@ def login_user(db: Session, data: LoginRequest):
     if pwd_match:
         print("  ✅ Step 5 (Password): Match! Password verification passed.")
     else:
-        print("  ❌ Step 5 (Password): MISMATCH! Provided password does not match stored hash.")
+        print(f"  ❌ Step 4 (Password): MISMATCH! Provided password does not match stored hash.")
+
+    # Step 5: Check DOB if stored
+    dob_match = True
+    if getattr(user, "dob", None) and getattr(data, "dob", None):
+        user_dob_norm = normalize_dob(user.dob)
+        data_dob_norm = normalize_dob(data.dob)
+        dob_match = (user_dob_norm == data_dob_norm)
+        if dob_match:
+            print(f"  ✅ Step 5 (DOB): Match! Input '{data.dob}' ({data_dob_norm}) == DB '{user.dob}' ({user_dob_norm})")
+        else:
+            print(f"  ❌ Step 5 (DOB): MISMATCH! Input '{data.dob}' ({data_dob_norm}) != DB '{user.dob}' ({user_dob_norm})")
 
     print("-" * 60)
-
-    if institute_match and contact_match and dob_match and pwd_match:
+    if user.institute_id == data.institute_id and contact_match and pwd_match and dob_match:
         print("🎉 LOGIN RESULT: SUCCESSFUL ✅")
         print("=" * 60 + "\n")
         return user

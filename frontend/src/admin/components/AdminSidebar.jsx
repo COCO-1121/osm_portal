@@ -23,7 +23,8 @@ function AdminSidebar() {
       localStorage.removeItem("access_token");
       localStorage.removeItem("token_type");
       localStorage.removeItem("admin_user");
-      navigate("/admin/login", { replace: true });
+      localStorage.removeItem("admin");
+      navigate("/", { replace: true });
     }
   };
 

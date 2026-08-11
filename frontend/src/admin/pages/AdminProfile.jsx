@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaFileCsv, FaFilePdf, FaFilter, FaTimes } from "react-icons/fa";
 import AdminLayout from "../../shared/layouts/AdminLayout";
 import { getLoginHistory, updateAdminProfile, changeAdminPassword } from "../services/adminService";
 import { useAdmin } from "../context/AdminContext";
@@ -62,12 +62,14 @@ function AdminProfile() {
   const [historyPage, setHistoryPage] = useState(1);
   const [historyTotalPages, setHistoryTotalPages] = useState(1);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
     async function fetchHistory() {
       try {
         setHistoryLoading(true);
-        const data = await getLoginHistory(historyPage, 5); // 5 items per page
+        const data = await getLoginHistory(historyPage, 5, startDate, endDate); // 5 items per page
         setLoginHistory(data.items);
         setHistoryTotalPages(data.pages);
       } catch (err) {
@@ -77,7 +79,126 @@ function AdminProfile() {
       }
     }
     fetchHistory();
-  }, [historyPage]);
+  }, [historyPage, startDate, endDate]);
+
+  const handleClearFilter = () => {
+    setStartDate("");
+    setEndDate("");
+    setHistoryPage(1);
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      const data = await getLoginHistory(1, 1000, startDate, endDate);
+      const items = data.items || [];
+      if (items.length === 0) {
+        alert("No login history records found to export.");
+        return;
+      }
+      const headers = ["Last Login", "Browser", "IP Address", "Device"];
+      const rows = items.map((h) => [
+        `"${new Date(h.login_at).toLocaleString()}"`,
+        `"${(h.browser || "").replace(/"/g, '""')}"`,
+        `"${(h.ip_address || "").replace(/"/g, '""')}"`,
+        `"${(h.device || "").replace(/"/g, '""')}"`,
+      ]);
+      const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `login_history_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      alert("Failed to export CSV: " + err.message);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      const data = await getLoginHistory(1, 1000, startDate, endDate);
+      const items = data.items || [];
+      if (items.length === 0) {
+        alert("No login history records found to export.");
+        return;
+      }
+
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        alert("Please allow popups to export PDF.");
+        return;
+      }
+
+      const filterRange = (startDate || endDate)
+        ? `Date Range: ${startDate || 'Start'} to ${endDate || 'Present'}`
+        : "Filter: All Time";
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Login History Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 30px; color: #333; }
+            h1 { color: #1e3a8a; margin-bottom: 4px; font-size: 24px; }
+            p { margin: 4px 0; color: #555; font-size: 14px; }
+            .header { border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+            th { background-color: #f3f4f6; text-align: left; padding: 10px; border: 1px solid #d1d5db; font-size: 13px; font-weight: bold; }
+            td { padding: 10px; border: 1px solid #e5e7eb; font-size: 13px; }
+            tr:nth-child(even) { background-color: #f9fafb; }
+            .footer { margin-top: 30px; font-size: 12px; text-align: right; color: #9ca3af; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Login History Report</h1>
+            <p><strong>Admin:</strong> ${profile.name || profile.user_id || 'Administrator'} (${profile.email || ''})</p>
+            <p><strong>${filterRange}</strong> | Total Records: ${items.length}</p>
+            <p><strong>Generated On:</strong> ${new Date().toLocaleString()}</p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Last Login</th>
+                <th>Browser</th>
+                <th>IP Address</th>
+                <th>Device</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map((item, idx) => `
+                <tr>
+                  <td>${idx + 1}</td>
+                  <td>${new Date(item.login_at).toLocaleString()}</td>
+                  <td>${item.browser || 'N/A'}</td>
+                  <td>${item.ip_address || 'N/A'}</td>
+                  <td>${item.device || 'N/A'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="footer">
+            OSM Portal - Login History Audit Report
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+        </html>
+      `;
+
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+    } catch (err) {
+      alert("Failed to export PDF: " + err.message);
+    }
+  };
 
   const handleProfileChange = (e) => {
     const { name, value } = e.target;
@@ -340,7 +461,80 @@ function AdminProfile() {
 
         {/* Login History Section */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Login History</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 mb-4 gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">Login History</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Track administrator account login sessions and devices.</p>
+            </div>
+
+            {/* Export Buttons */}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleExportCSV}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-semibold text-sm transition shadow-sm cursor-pointer"
+              >
+                <FaFileCsv className="text-emerald-600 text-lg" />
+                Export CSV
+              </button>
+
+              <button
+                type="button"
+                onClick={handleExportPDF}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 font-semibold text-sm transition shadow-sm cursor-pointer"
+              >
+                <FaFilePdf className="text-rose-600 text-lg" />
+                Export PDF
+              </button>
+            </div>
+          </div>
+
+          {/* Date Filter Bar */}
+          <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 mb-4 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <FaFilter className="text-blue-600" />
+              <span>Filter by Date Range:</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-gray-500 font-medium">From:</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setHistoryPage(1);
+                  }}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-gray-500 font-medium">To:</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setHistoryPage(1);
+                  }}
+                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+
+              {(startDate || endDate) && (
+                <button
+                  type="button"
+                  onClick={handleClearFilter}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-300 text-gray-600 hover:bg-gray-100 rounded-lg text-xs font-medium cursor-pointer"
+                >
+                  <FaTimes />
+                  Clear Filter
+                </button>
+              )}
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>

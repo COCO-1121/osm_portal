@@ -175,24 +175,42 @@ def get_admin_dashboard_stats(
 # ---------------------------------------------------------
 from app.models.login_history import LoginHistory
 from app.schemas.login_history import PaginatedLoginHistoryResponse
+from fastapi import Query
+from datetime import datetime, time
 
 @router.get("/login-history", response_model=PaginatedLoginHistoryResponse)
 def get_admin_login_history(
     page: int = 1,
     size: int = 10,
+    start_date: str | None = Query(None, description="Filter start date (YYYY-MM-DD)"),
+    end_date: str | None = Query(None, description="Filter end date (YYYY-MM-DD)"),
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_admin),
 ):
-    offset = (page - 1) * size
-    
     query = db.query(LoginHistory).filter(LoginHistory.user_id == current_admin.id)
+
+    if start_date:
+        try:
+            s_dt = datetime.strptime(start_date, "%Y-%m-%d")
+            query = query.filter(LoginHistory.login_at >= s_dt)
+        except ValueError:
+            pass
+
+    if end_date:
+        try:
+            e_dt = datetime.strptime(end_date, "%Y-%m-%d")
+            e_dt_end = datetime.combine(e_dt.date(), time.max)
+            query = query.filter(LoginHistory.login_at <= e_dt_end)
+        except ValueError:
+            pass
+
     total = query.count()
-    
+    offset = (page - 1) * size
     histories = query.order_by(LoginHistory.login_at.desc()).offset(offset).limit(size).all()
-    
+
     import math
     pages = math.ceil(total / size) if total > 0 else 0
-    
+
     return {
         "items": histories,
         "total": total,
