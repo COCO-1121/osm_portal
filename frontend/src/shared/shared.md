@@ -94,11 +94,22 @@ This document tracks all changes made to primary entry-point files and secondary
 - **Changes Applied**:
   - `backend/app/main.py`: Added automatic schema verification and execution of `ALTER TABLE users ADD COLUMN IF NOT EXISTS dob VARCHAR(20);` in `startup_event()`.
 
-### [2026-08-08] Uploader Module Logout Navigation Update
-- **Target Files**: `frontend/src/uploader/pages/UploaderDashboardPage.jsx`, `frontend/src/uploader/pages/UploadedCopies.jsx`, `frontend/src/uploader/pages/RejectedQueue.jsx`, `frontend/src/uploader/pages/PreviewPage.jsx`
-- **Reason**: Redirect users to the main Role Selection Page (`/`) showing Uploader, Examiner, and Admin options upon confirming logout in the Uploader module.
+### [2026-08-17] Super Admin & Institution Hierarchy 4-Tier System Integration
+- **Target Files**: `backend/app/main.py`, `frontend/src/App.jsx`
+- **Reason**: Implement 4-tier hierarchy system (OSM Super Admin -> Institutions -> Institution Admin -> Admin / Uploader) and auto-migrate institution schema columns.
 - **Changes Applied**:
-  - Updated `handleLogout` functions in `UploaderDashboardPage.jsx`, `UploadedCopies.jsx`, `RejectedQueue.jsx`, and `PreviewPage.jsx` to clear localStorage session tokens and navigate to `/`.
+  - `backend/app/main.py`: Mounted `super_admin_router` and `institution_router`, and added automatic column migration (`ALTER TABLE institutions ADD COLUMN IF NOT EXISTS ...`) in `startup_event()` for all 12+ institution metadata fields across database engines (`admin_engine`, `examiner_engine`, `uploader_engine`).
+  - `frontend/src/App.jsx`: Registered routes `/super-admin/login`, `/super-admin/dashboard`, `/institution/login`, `/institution/dashboard`.
+  - `backend/app/main.py`: Imported `institution_router` from `app.api.ADMIN_API.v1.institution.institution` and registered it on FastAPI `app`. Imported `Institution` model to auto-create `institutions` table on startup.
+  - `frontend/src/App.jsx`: Imported `InstitutionLoginPage` and `InstitutionDashboardPage`, registered routes `/institution/login` and `/institution/dashboard`.
+
+### [2026-08-18] Uploader & Examiner Login Pages Single-Page No-Scroll Layout Optimization
+- **Target Files**: `frontend/src/uploader/pages/UploaderLoginPage.jsx`, `frontend/src/examiner/pages/ExaminerLoginPage.jsx`
+- **Reason**: Ensure login pages fit inside standard viewport height (`100vh`) without vertical scrollbars, while preserving full visibility of all text, fields, buttons, and footers.
+- **Changes Applied**:
+  - `UploaderLoginPage.jsx`: Configured wrapper to `h-screen flex flex-col overflow-hidden`, compact card size (`w-[520px] p-5`), and optimized spacing.
+  - `ExaminerLoginPage.jsx`: Configured wrapper to `h-screen flex flex-col overflow-hidden` with `min-h-0` main content area.
+
 
 
 

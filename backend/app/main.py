@@ -14,6 +14,9 @@ from app.api.ADMIN_API.v1.admin.audit_logs import router as admin_audit_logs_rou
 from app.api.ADMIN_API.v1.admin.examiners import router as admin_examiners_router
 from app.api.ADMIN_API.v1.admin.rejections import router as admin_rejections_router
 from app.api.ADMIN_API.v1.admin.ufm_cases import router as admin_ufm_cases_router
+from app.api.ADMIN_API.v1.institution.institution import router as institution_router
+from app.api.ADMIN_API.v1.super_admin.super_admin import router as super_admin_router
+from app.models.institution import Institution
 
 # Examiner Routers
 try:
@@ -97,6 +100,8 @@ app.add_middleware(
 
 # Register Unified Auth Router
 app.include_router(auth_router)
+app.include_router(institution_router)
+app.include_router(super_admin_router)
 
 # Register Admin Routers
 app.include_router(admin_dashboard_router)
@@ -216,6 +221,32 @@ def startup_event():
                 conn.commit()
         except Exception as e:
             logger.warning(f"Failed auto-migrate dob column: {e}")
+
+    # Auto-migrate columns in institutions table across engines
+    institution_migration_sqls = [
+        "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS institution_type VARCHAR(50) DEFAULT 'University';",
+        "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS email VARCHAR(255);",
+        "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS phone VARCHAR(50);",
+        "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS address VARCHAR(255) DEFAULT 'Main Campus Address';",
+        "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS city VARCHAR(100) DEFAULT 'Central City';",
+        "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS state VARCHAR(100) DEFAULT 'State';",
+        "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS pincode VARCHAR(20) DEFAULT '110001';",
+        "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS contact_person_name VARCHAR(150) DEFAULT 'Registrar';",
+        "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS contact_person_email VARCHAR(255) DEFAULT 'contact@osm.test';",
+        "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS contact_person_phone VARCHAR(50) DEFAULT '9876543210';",
+        "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255);",
+        "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'Active';",
+        "ALTER TABLE institutions ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;",
+    ]
+
+    for eng in [admin_engine, examiner_engine, uploader_engine]:
+        try:
+            with eng.connect() as conn:
+                for sql in institution_migration_sqls:
+                    conn.execute(text(sql))
+                conn.commit()
+        except Exception as e:
+            logger.warning(f"Failed auto-migrate institutions columns: {e}")
 
     # Create osm_scan folder if it doesn't exist
     scan_folder = Path(getattr(settings, "OSM_SCAN_FOLDER", "osm_scan"))

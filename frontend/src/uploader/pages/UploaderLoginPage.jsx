@@ -1,163 +1,225 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "./UploaderLogin.css";
+import Navbar from "../../shared/components/Navbar";
 import Footer from "../../shared/components/Footer";
-import { FaUser, FaLock, FaPhone } from "react-icons/fa";
+import {
+  FaUser,
+  FaPhone,
+  FaLock,
+  FaEye,
+  FaEyeSlash,
+  FaInfoCircle,
+} from "react-icons/fa";
 
 function UploaderLoginPage() {
   const navigate = useNavigate();
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [errors, setErrors] = useState({});
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleInputChange = (field, value) => {
-    if (field === "userId") setUserId(value);
-    if (field === "password") setPassword(value);
-    if (field === "phoneNumber") setPhoneNumber(value);
-
-    // Dynamic error clearing
-    if (errors[field]) {
-      setErrors((prev) => {
-        const next = { ...prev };
-        delete next[field];
-        return next;
-      });
-    }
+  const handleClear = () => {
+    setUserId("");
+    setPassword("");
+    setPhoneNumber("");
+    setError("");
   };
 
   const handleLogin = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
 
-    const newErrors = {};
-    if (!userId.trim()) {
-      newErrors.userId = "This field is required";
-    }
-    if (!password.trim()) {
-      newErrors.password = "This field is required";
-    }
-    if (!phoneNumber.trim()) {
-      newErrors.phoneNumber = "This field is required";
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+    if (!userId.trim() || !password || !phoneNumber.trim()) {
+      setError("Please fill in all fields.");
       return;
     }
 
+    setIsLoading(true);
+    setError("");
+
     try {
-      const requestBody = {
-        user_id: userId,
-        password: password,
-        phone: phoneNumber,
-      };
-      console.log("Sending login request:", requestBody);
-      
       const baseUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
       const response = await fetch(`${baseUrl}/api/v1/uploader/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          user_id: userId.trim(),
+          password: password,
+          phone: phoneNumber.trim(),
+        }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Login failed:", response.status, errorData);
-        setErrors({ general: errorData.detail || "Invalid User ID, Password, or Phone Number" });
+        setError(data.detail || "Invalid User ID, Password, or Phone Number.");
         return;
       }
 
-      const data = await response.json();
       if (data && data.access_token) {
         localStorage.setItem("uploader_token", data.access_token);
-        localStorage.setItem("uploader_id", userId);
-        setErrors({});
+        localStorage.setItem("uploader_id", userId.trim());
         navigate("/uploader/dashboard");
       } else {
-        setErrors({ general: "Invalid response from server" });
+        setError("Invalid response from server.");
       }
     } catch (err) {
-      setErrors({ general: "Failed to connect to the backend server" });
+      console.error("Uploader login error:", err);
+      setError("Unable to connect to the server. Please make sure the backend is running.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleLogin();
     }
   };
 
   return (
-    <div className="page">
+    <div className="h-screen flex flex-col bg-white uploader-login-page overflow-hidden">
+      {/* Navbar */}
+      <Navbar onBack={() => navigate("/")} />
 
-      <div className="topbar">
-        <h2>On-Screen Marking System</h2>
-      </div>
+      {/* Main Content */}
+      <main className="flex-1 bg-gray-50 flex items-center justify-center py-2 px-4 uploader-login-main min-h-0 overflow-y-auto">
+        <div className="w-[520px] max-w-full bg-white rounded-xl border border-gray-200 shadow-xl p-5 my-auto">
+          {/* Heading */}
+          <h2 className="text-2xl font-bold text-gray-800">
+            Uploader Portal
+          </h2>
 
-      <div className="loginContainer">
-
-        <form className="loginCard" onSubmit={handleLogin}>
-
-          <h2>Uploader Login</h2>
-
-          {errors.general && (
-            <div className="errorText" style={{ textAlign: "center", marginBottom: "15px", display: "block" }}>
-              {errors.general}
-            </div>
-          )}
-
-          <div className="inputGroup">
-            <label>User ID</label>
-            <div className={`input ${errors.userId ? "error-border" : ""}`}>
-              <FaUser />
-              <input
-                type="text"
-                placeholder="Enter User ID"
-                value={userId}
-                onChange={(e) => handleInputChange("userId", e.target.value)}
-              />
-            </div>
-            {errors.userId && <span className="errorText">{errors.userId}</span>}
-          </div>
-
-          <div className="inputGroup">
-            <label>Password</label>
-            <div className={`input ${errors.password ? "error-border" : ""}`}>
-              <FaLock />
-              <input
-                type="password"
-                placeholder="Enter Password"
-                value={password}
-                onChange={(e) => handleInputChange("password", e.target.value)}
-              />
-            </div>
-            {errors.password && <span className="errorText">{errors.password}</span>}
-          </div>
-
-          <div className="inputGroup">
-            <label>Phone Number</label>
-            <div className={`input ${errors.phoneNumber ? "error-border" : ""}`}>
-              <FaPhone />
-              <input
-                type="text"
-                placeholder="Enter Phone Number"
-                value={phoneNumber}
-                onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
-              />
-            </div>
-            {errors.phoneNumber && <span className="errorText">{errors.phoneNumber}</span>}
-          </div>
-
-          <button type="submit" className="loginBtn">
-            Login
-          </button>
-
-          <p className="helpText">
-            Forgot password? <span className="linkText">Contact admin.</span>
+          <p className="text-xs text-gray-500 mt-0.5 mb-3">
+            Login to manage the On-Screen Marking System script uploads.
           </p>
 
-        </form>
+          <form onSubmit={handleLogin} onKeyDown={handleKeyDown}>
+            {/* Uploader User ID */}
+            <div className="mb-2.5">
+              <label className="text-xs text-gray-500 font-medium">
+                Uploader User ID
+              </label>
 
-      </div>
+              <div className="mt-1 flex items-center border border-gray-300 rounded-lg px-3 py-2 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
+                <FaUser className="text-gray-400 mr-2 text-xs" />
 
+                <input
+                  type="text"
+                  value={userId}
+                  onChange={(e) => {
+                    setUserId(e.target.value);
+                    if (error) setError("");
+                  }}
+                  placeholder="UPL001"
+                  className="w-full outline-none text-sm bg-transparent"
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            {/* Phone Number */}
+            <div className="mb-2.5">
+              <label className="text-xs text-gray-500 font-medium">
+                Phone Number
+              </label>
+
+              <div className="mt-1 flex items-center border border-gray-300 rounded-lg px-3 py-2 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
+                <FaPhone className="text-gray-400 mr-2 text-xs" />
+
+                <input
+                  type="text"
+                  value={phoneNumber}
+                  onChange={(e) => {
+                    setPhoneNumber(e.target.value);
+                    if (error) setError("");
+                  }}
+                  placeholder="+91 XXXXX XXXXX"
+                  className="w-full outline-none text-sm bg-transparent"
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div className="mb-2.5">
+              <label className="text-xs text-gray-500 font-medium">
+                Password
+              </label>
+
+              <div className="mt-1 flex items-center border border-gray-300 rounded-lg px-3 py-2 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
+                <FaLock className="text-gray-400 mr-2 text-xs" />
+
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (error) setError("");
+                  }}
+                  placeholder="••••••••"
+                  className="w-full outline-none text-sm bg-transparent"
+                  autoComplete="new-password"
+                  disabled={isLoading}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer ml-2"
+                  title={showPassword ? "Hide Password" : "Show Password"}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5">
+                <p className="text-xs text-red-600">
+                  {error}
+                </p>
+              </div>
+            )}
+
+            {/* Buttons */}
+            <div className="flex gap-3 mt-4">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="flex-1 bg-blue-700 hover:bg-blue-800 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-2 rounded-lg transition cursor-pointer text-sm"
+              >
+                {isLoading ? "Logging in..." : "Login"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleClear}
+                disabled={isLoading}
+                className="w-24 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium text-gray-700 cursor-pointer text-sm"
+              >
+                Clear
+              </button>
+            </div>
+          </form>
+
+          {/* Info Banner */}
+          <div className="mt-3 bg-gray-100 rounded-lg p-2.5 flex gap-2 items-center">
+            <FaInfoCircle className="text-blue-600 shrink-0 text-xs" />
+
+            <p className="text-[11px] text-gray-600">
+              Only authorized uploaders can access this portal.
+            </p>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
       <Footer />
-
     </div>
   );
 }

@@ -5,6 +5,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import RoleSelectionPage from './shared/pages/RoleSelectionPage';
 import Home from './shared/pages/Home';
 import DashboardLayout from './shared/layouts/DashboardLayout';
+import InstitutionLoginPage from './shared/pages/InstitutionLoginPage';
+import InstitutionDashboardPage from './shared/pages/InstitutionDashboardPage';
+import SuperAdminLoginPage from './shared/pages/SuperAdminLoginPage';
+import SuperAdminDashboardPage from './shared/pages/SuperAdminDashboardPage';
 
 // Admin Module Pages
 import AdminLoginPage from './admin/pages/AdminLoginPage';
@@ -50,6 +54,10 @@ function App() {
         {/* ================= PUBLIC & ROLE SELECTOR ROUTES ================= */}
         <Route path="/" element={<RoleSelectionPage />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/super-admin/login" element={<SuperAdminLoginPage />} />
+        <Route path="/super-admin/dashboard" element={<SuperAdminDashboardPage />} />
+        <Route path="/institution/login" element={<InstitutionLoginPage />} />
+        <Route path="/institution/dashboard" element={<InstitutionDashboardPage />} />
 
 
         {/* ================= PUBLIC ADMIN ROUTES ================= */}

@@ -111,24 +111,24 @@ function AdminLoginCard() {
   };
 
   return (
-    <div className="w-[600px] bg-white rounded-xl border border-gray-200 shadow-xl p-5">
+    <div className="w-[520px] max-w-full bg-white rounded-xl border border-gray-200 shadow-xl p-5 my-auto">
       {/* Heading */}
-      <h2 className="text-3xl font-bold text-gray-800">
+      <h2 className="text-2xl font-bold text-gray-800">
         Admin Portal
       </h2>
 
-      <p className="text-sm text-gray-500 mt-1 mb-5">
+      <p className="text-xs text-gray-500 mt-0.5 mb-3">
         Login to manage the On-Screen Marking System.
       </p>
 
       {/* Admin ID */}
-      <div className="mb-3">
+      <div className="mb-2.5">
         <label className="text-xs text-gray-500">
           Admin User ID
         </label>
 
-        <div className="mt-1 flex items-center border border-gray-300 rounded-lg px-3 py-2.5 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
-          <FaUserShield className="text-gray-400 mr-2" />
+        <div className="mt-1 flex items-center border border-gray-300 rounded-lg px-3 py-2 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
+          <FaUserShield className="text-gray-400 mr-2 text-xs" />
 
           <input
             type="text"
@@ -137,20 +137,20 @@ function AdminLoginCard() {
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder="ADM001"
-            className="w-full outline-none text-sm"
+            className="w-full outline-none text-sm bg-transparent"
             disabled={isLoading}
           />
         </div>
       </div>
 
       {/* Institute */}
-      <div className="mb-3">
+      <div className="mb-2.5">
         <label className="text-xs text-gray-500">
           Institute ID
         </label>
 
-        <div className="mt-1 flex items-center border border-gray-300 rounded-lg px-3 py-2.5 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
-          <FaBuilding className="text-gray-400 mr-2" />
+        <div className="mt-1 flex items-center border border-gray-300 rounded-lg px-3 py-2 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
+          <FaBuilding className="text-gray-400 mr-2 text-xs" />
 
           <input
             type="text"
@@ -159,20 +159,20 @@ function AdminLoginCard() {
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder="INST-001"
-            className="w-full outline-none text-sm"
+            className="w-full outline-none text-sm bg-transparent"
             disabled={isLoading}
           />
         </div>
       </div>
 
       {/* Phone */}
-      <div className="mb-3">
+      <div className="mb-2.5">
         <label className="text-xs text-gray-500">
           Phone Number
         </label>
 
-        <div className="mt-1 flex items-center border border-gray-300 rounded-lg px-3 py-2.5 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
-          <FaPhone className="text-gray-400 mr-2" />
+        <div className="mt-1 flex items-center border border-gray-300 rounded-lg px-3 py-2 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
+          <FaPhone className="text-gray-400 mr-2 text-xs" />
 
           <input
             type="text"
@@ -181,20 +181,20 @@ function AdminLoginCard() {
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder="+91 XXXXX XXXXX"
-            className="w-full outline-none text-sm"
+            className="w-full outline-none text-sm bg-transparent"
             disabled={isLoading}
           />
         </div>
       </div>
 
       {/* Password */}
-      <div className="mb-3">
+      <div className="mb-2.5">
         <label className="text-xs text-gray-500">
           Password
         </label>
 
-        <div className="mt-1 flex items-center border border-gray-300 rounded-lg px-3 py-2.5 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
-          <FaLock className="text-gray-400 mr-2" />
+        <div className="mt-1 flex items-center border border-gray-300 rounded-lg px-3 py-2 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100">
+          <FaLock className="text-gray-400 mr-2 text-xs" />
 
           <input
             type={showPassword ? "text" : "password"}
@@ -203,7 +203,8 @@ function AdminLoginCard() {
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder="••••••••"
-            className="w-full outline-none text-sm"
+            className="w-full outline-none text-sm bg-transparent"
+            autoComplete="new-password"
             disabled={isLoading}
           />
 
@@ -219,20 +220,20 @@ function AdminLoginCard() {
 
       {/* Error Message */}
       {error && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
-          <p className="text-sm text-red-600">
+        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5">
+          <p className="text-xs text-red-600">
             {error}
           </p>
         </div>
       )}
 
       {/* Buttons */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 mt-4">
         <button
           type="button"
           onClick={handleLogin}
           disabled={isLoading}
-          className="flex-1 bg-blue-700 hover:bg-blue-800 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition"
+          className="flex-1 bg-blue-700 hover:bg-blue-800 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-2 rounded-lg transition text-sm cursor-pointer"
         >
           {isLoading ? "Logging in..." : "Login"}
         </button>
@@ -241,17 +242,17 @@ function AdminLoginCard() {
           type="button"
           onClick={handleClear}
           disabled={isLoading}
-          className="w-28 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          className="w-24 border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium text-gray-700 text-sm cursor-pointer"
         >
           Clear
         </button>
       </div>
 
       {/* Info */}
-      <div className="mt-4 bg-gray-100 rounded-lg p-3 flex gap-2">
-        <FaInfoCircle className="text-blue-600 mt-1" />
+      <div className="mt-3 bg-gray-100 rounded-lg p-2.5 flex gap-2 items-center">
+        <FaInfoCircle className="text-blue-600 shrink-0 text-xs" />
 
-        <p className="text-xs text-gray-600">
+        <p className="text-[11px] text-gray-600">
           Only authorized administrators can access this portal.
         </p>
       </div>

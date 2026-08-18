@@ -3,9 +3,11 @@ from app.core.security import hash_password
 from app.db.session import AdminSessionLocal, ExaminerSessionLocal, UploaderSessionLocal
 from app.models.role import Role
 from app.models.user import User
+from app.models.institution import Institution
 
 
 DEFAULT_ROLES = [
+    "SUPER_ADMIN",
     "ADMIN",
     "EXAMINER",
     "UPLOADER",
@@ -13,6 +15,15 @@ DEFAULT_ROLES = [
 
 
 TEST_USERS = [
+    {
+        "user_id": "SUPERADMIN",
+        "name": "OSM Super Administrator",
+        "email": "superadmin@osm.test",
+        "phone": "9000000000",
+        "institute_id": "HQ-001",
+        "password": "SuperAdmin@123",
+        "role": "SUPER_ADMIN",
+    },
     {
         "user_id": "ADM001",
         "name": "Tripathi (Admin)",
@@ -30,7 +41,7 @@ TEST_USERS = [
         "institute_id": "INST-001",
         "password": "Examiner@123",
         "role": "EXAMINER",
-         "dob": "1990-01-01",
+        "dob": "1990-01-01",
     },
     {
         "user_id": "UPL001",
@@ -42,6 +53,23 @@ TEST_USERS = [
         "role": "UPLOADER",
     },
 ]
+
+
+DEFAULT_INSTITUTION = {
+    "institute_id": "INST-001",
+    "name": "Central Assessment Institution",
+    "institution_type": "University",
+    "email": "institution@osm.test",
+    "phone": "9876543210",
+    "address": "Campus Block A, Tech Hub",
+    "city": "New Delhi",
+    "state": "Delhi",
+    "pincode": "110001",
+    "contact_person_name": "Dr. A. K. Sharma",
+    "contact_person_email": "registrar@osm.test",
+    "contact_person_phone": "9876543211",
+    "password": "Inst@123",
+}
 
 
 def seed_roles(db):
@@ -65,7 +93,6 @@ def seed_users(db):
         )
 
         if existing_user:
-    # Update DOB if it exists in TEST_USERS
             if "dob" in user_data:
                 existing_user.dob = user_data["dob"]
             db.commit()
@@ -78,7 +105,6 @@ def seed_users(db):
         )
 
         if not role:
-            # Fallback to any role if role name exact match fails
             role = db.scalar(select(Role))
 
         if not role:
@@ -103,10 +129,39 @@ def seed_users(db):
     db.commit()
 
 
+def seed_institutions(db):
+    existing = db.scalar(
+        select(Institution).where(
+            Institution.institute_id == DEFAULT_INSTITUTION["institute_id"]
+        )
+    )
+    if not existing:
+        inst = Institution(
+            institute_id=DEFAULT_INSTITUTION["institute_id"],
+            name=DEFAULT_INSTITUTION["name"],
+            institution_type=DEFAULT_INSTITUTION["institution_type"],
+            email=DEFAULT_INSTITUTION["email"],
+            phone=DEFAULT_INSTITUTION["phone"],
+            address=DEFAULT_INSTITUTION["address"],
+            city=DEFAULT_INSTITUTION["city"],
+            state=DEFAULT_INSTITUTION["state"],
+            pincode=DEFAULT_INSTITUTION["pincode"],
+            contact_person_name=DEFAULT_INSTITUTION["contact_person_name"],
+            contact_person_email=DEFAULT_INSTITUTION["contact_person_email"],
+            contact_person_phone=DEFAULT_INSTITUTION["contact_person_phone"],
+            password_hash=hash_password(DEFAULT_INSTITUTION["password"]),
+            status="Active",
+            is_active=True,
+        )
+        db.add(inst)
+        db.commit()
+
+
 def seed_session(session_factory, name):
     db = session_factory()
     try:
         seed_roles(db)
+        seed_institutions(db)
         seed_users(db)
         print(f"[{name}] Database seeding completed successfully.")
     except Exception as error:

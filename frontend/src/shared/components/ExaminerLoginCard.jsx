@@ -8,6 +8,8 @@ import {
   FaEnvelope,
   FaCalendarAlt,
   FaInfoCircle,
+  FaEye,
+  FaEyeSlash,
 } from "react-icons/fa";
 
 function ExaminerLoginCard() {
@@ -20,6 +22,8 @@ function ExaminerLoginCard() {
     dob: "",
     contact: "",
   });
+
+  const [showPassword, setShowPassword] = useState(false);
 
   const [errors, setErrors] = useState({});
 
@@ -180,13 +184,22 @@ function ExaminerLoginCard() {
             <FaLock className={errors.password ? "text-red-400 mr-2" : "text-gray-400 mr-2"} />
 
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               name="password"
               value={formData.password}
               onChange={handleChange}
               placeholder="••••••••"
+              autoComplete="new-password"
               className="w-full outline-none text-sm"
             />
+
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer ml-2"
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
 
           </div>
           {errors.password && (
