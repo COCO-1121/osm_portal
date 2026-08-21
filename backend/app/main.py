@@ -122,7 +122,8 @@ if examiner_reports_router:
 if uploader_auth_router:
     app.include_router(uploader_auth_router)
 if uploader_scanned_router:
-    app.include_router(uploader_scanned_router)
+    app.include_router(uploader_scanned_router, prefix="/api")
+    app.include_router(uploader_scanned_router, prefix="/api/v1")
 if uploader_mgmt_router:
     app.include_router(uploader_mgmt_router)
 if uploader_exams_router:

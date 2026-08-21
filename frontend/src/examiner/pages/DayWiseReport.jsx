@@ -31,9 +31,11 @@ function DayWiseReport() {
       let dailyStats = JSON.parse(localStorage.getItem('daily_stats'));
       
       // Clean up old stale demo keys if present
-      if (dailyStats && (dailyStats['17-07-2026_0302'] || dailyStats['20-07-2026_0302'])) {
-        localStorage.removeItem('daily_stats');
-        dailyStats = null;
+      if (dailyStats && (dailyStats['17-07-2026_0302'] || dailyStats['20-07-2026_0302'] || dailyStats['19-08-2026_0302'])) {
+        delete dailyStats['17-07-2026_0302'];
+        delete dailyStats['20-07-2026_0302'];
+        delete dailyStats['19-08-2026_0302'];
+        localStorage.setItem('daily_stats', JSON.stringify(dailyStats));
       }
 
       if (!dailyStats || Object.keys(dailyStats).length === 0) {
@@ -49,14 +51,18 @@ function DayWiseReport() {
 
       const reportData = Object.entries(dailyStats).map(([key, value], index) => {
         const [date, code] = key.split('_');
+        const comp = value.completed || 0;
+        const rej = value.rejected || 0;
+        const ufm = value.ufm || 0;
         return {
           id: index + 1,
           code: code || "048",
           subject: value.subject || "PHYSICS (048)",
           date: date || today,
-          completed: value.completed || 0,
-          rejected: value.rejected || 0,
-          ufm: value.ufm || 0
+          completed: comp,
+          rejected: rej,
+          ufm: ufm,
+          total: value.total ?? Math.max(1, comp + rej + ufm)
         };
       });
       reportData.reverse();
@@ -66,9 +72,13 @@ function DayWiseReport() {
     fetchDayWiseReport();
   }, []);
 
-  const totalCompleted = report.reduce((sum, item) => sum + item.completed, 0);
-  const totalRejected = report.reduce((sum, item) => sum + item.rejected, 0);
-  const totalUFM = report.reduce((sum, item) => sum + item.ufm, 0);
+  const totalCompleted = report.reduce((sum, item) => sum + (item.completed || 0), 0);
+  const totalRejected = report.reduce((sum, item) => sum + (item.rejected || 0), 0);
+  const totalUFM = report.reduce((sum, item) => sum + (item.ufm || 0), 0);
+  const totalScripts = report.reduce(
+    (sum, item) => sum + (item.total !== undefined && item.total !== null ? item.total : Math.max(1, (item.completed || 0) + (item.rejected || 0) + (item.ufm || 0))),
+    0
+  );
 
   return (
     <div className="report-page">
@@ -100,7 +110,7 @@ function DayWiseReport() {
 
         <div className="card">
           <h3>Total Scripts</h3>
-          <span>{totalCompleted + totalRejected + totalUFM}</span>
+          <span>{totalScripts}</span>
         </div>
 
         <div className="card">

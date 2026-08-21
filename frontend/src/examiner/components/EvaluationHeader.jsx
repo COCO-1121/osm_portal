@@ -2,34 +2,18 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import "./Evaluation.css";
 
-function EvaluationHeader() {
-  const { subjectId } = useParams();
-  const [userId, setUserId] = useState("E1438427");
-  const [scriptId, setScriptId] = useState("684429");
-
-  useEffect(() => {
-    const storedUserId = localStorage.getItem("examinerUserId");
-    if (storedUserId) {
-      setUserId(storedUserId);
-    }
-    
-    // Switch script ID slightly based on subject for demo purposes
-    if (subjectId === "0551") {
-      setScriptId("684430");
-    } else {
-      setScriptId("684429");
-    }
-  }, [subjectId]);
-
-  const subjectName = subjectId === "0551" ? "ACCOUNTANCY - Set 1" : "ECONOMICS - Set 2";
-  const displaySubjectId = subjectId || "0302";
+function EvaluationHeader({ subjectName, subjectCode, scriptId, userId }) {
+  const displayUserId = userId || localStorage.getItem("examinerUserId") || localStorage.getItem("examiner_id") || "EXM001";
+  const displayScriptId = scriptId || "OSM-001";
+  const displaySubjectName = subjectName || "PHYSICS (048)";
+  const displaySubjectCode = subjectCode || "048";
 
   return (
     <header className="evaluation-header">
 
       <div className="subject-info">
 
-        <h2>Subject : ({displaySubjectId}) {subjectName}</h2>
+        <h2>Subject : ({displaySubjectCode}) {displaySubjectName}</h2>
 
       </div>
 
@@ -37,7 +21,7 @@ function EvaluationHeader() {
 
         <div className="detail-card">
           <span className="label">User ID</span>
-          <span className="value">{userId}</span>
+          <span className="value">{displayUserId}</span>
         </div>
 
         <div className="detail-card">
@@ -47,7 +31,7 @@ function EvaluationHeader() {
 
         <div className="detail-card">
           <span className="label">Script ID</span>
-          <span className="value">{scriptId}</span>
+          <span className="value">{displayScriptId}</span>
         </div>
 
       </div>

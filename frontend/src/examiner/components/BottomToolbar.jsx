@@ -25,8 +25,25 @@ import {
   CircleDot
 } from "lucide-react";
 
-function BottomToolbar({ currentPage, totalPages, onSave, onSubmit, onReject, onUFM, activeTool, setActiveTool }) {
+import React, { useState, useEffect } from "react";
+
+function BottomToolbar({ currentPage, totalPages, onSave, onSubmit, onReject, onUFM, activeTool, setActiveTool, scriptIndex = 1, totalScripts = 1 }) {
   const navigate = useNavigate();
+  const [secondsElapsed, setSecondsElapsed] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSecondsElapsed((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (totalSec) => {
+    const hrs = Math.floor(totalSec / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+    return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  };
 
   const handleToolSelect = (toolName) => {
     setActiveTool(toolName);
@@ -35,6 +52,10 @@ function BottomToolbar({ currentPage, totalPages, onSave, onSubmit, onReject, on
       if (c) alert("Comment saved: " + c);
       setActiveTool('M'); // revert to default
     }
+  };
+
+  const handleAction = (actionName) => {
+    alert(`${actionName} feature: Viewer / Reference key for this examination set.`);
   };
 
   const getToolStyle = (toolName) => {
@@ -48,7 +69,7 @@ function BottomToolbar({ currentPage, totalPages, onSave, onSubmit, onReject, on
       <div className="toolbar-left">
         <div className="status-box" title="Current student answer sheet number">
           <span>Answer Book</span>
-          <strong>1 / 1</strong>
+          <strong>{scriptIndex} / {totalScripts}</strong>
         </div>
 
         <div className="status-box" title="Current page number">
@@ -58,7 +79,7 @@ function BottomToolbar({ currentPage, totalPages, onSave, onSubmit, onReject, on
 
         <div className="status-box" title="Time elapsed in evaluation">
           <span>Time</span>
-          <strong>00:02:42</strong>
+          <strong>{formatTime(secondsElapsed)}</strong>
         </div>
       </div>
 

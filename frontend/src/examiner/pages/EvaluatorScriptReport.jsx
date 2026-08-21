@@ -318,7 +318,7 @@ function EvaluatorScriptReport() {
 
                     <button
                       className="action-btn"
-                      onClick={() => navigate(`/examiner/evaluation/${item.id}`)}
+                      onClick={() => navigate(`/examiner/evaluation/${item.id}`, { state: { script: item } })}
                     >
 
                       <Eye size={18} />

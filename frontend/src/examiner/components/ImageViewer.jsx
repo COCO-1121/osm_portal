@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import "./Evaluation.css";
 import {
   ZoomIn,
@@ -30,11 +31,22 @@ function ImageViewer({
   onDeleteStamp,
   onClearStamps,
   isMarkingActive,
-  activeTool
+  activeTool,
+  documentUrl,
+  documentName,
+  loadingDocument,
+  scriptBarcode,
+  docId
 }) {
+  const { scriptId } = useParams();
   const [zoom, setZoom] = useState(0.85);
   const [rotation, setRotation] = useState(0);
   const [hoveredStampId, setHoveredStampId] = useState(null);
+
+  const targetCode = scriptBarcode || scriptId;
+  const pageImageUrl = targetCode
+    ? `http://127.0.0.1:8000/api/v1/scanned-documents/by-barcode/${encodeURIComponent(targetCode)}/page/${currentPage}`
+    : null;
 
   const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.1, 2));
   const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.1, 0.4));
@@ -83,6 +95,26 @@ function ImageViewer({
       <div className="viewer-header">
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <h3 style={{ margin: 0 }}>Answer Sheet Viewer</h3>
+          {documentName && (
+            <span
+              style={{
+                backgroundColor: "#eff6ff",
+                color: "#1d4ed8",
+                border: "1px solid #bfdbfe",
+                borderRadius: "12px",
+                padding: "2px 10px",
+                fontSize: "11px",
+                fontWeight: "600",
+                maxWidth: "200px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap"
+              }}
+              title={documentName}
+            >
+              📄 {documentName}
+            </span>
+          )}
           {isMarkingActive && (
             <span
               style={{
@@ -144,18 +176,67 @@ function ImageViewer({
             overflow: "visible"
           }}
         >
-          <img
-            src={`/sheets/page${currentPage <= 5 ? currentPage : (currentPage % 5) + 1}.png`}
-            alt={`Answer sheet page ${currentPage}`}
-            style={{
-              width: "100%",
-              height: "auto",
-              boxShadow: "0 4px 15px rgba(0,0,0,0.18)",
-              borderRadius: "8px",
-              display: "block",
-              userSelect: "none"
-            }}
-          />
+          {loadingDocument ? (
+            <div
+              style={{
+                width: "100%",
+                height: "600px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "#ffffff",
+                borderRadius: "8px",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.18)",
+                color: "#1e40af",
+                fontWeight: "600"
+              }}
+            >
+              Loading answer sheet page {currentPage}...
+            </div>
+          ) : pageImageUrl ? (
+            <img
+              src={pageImageUrl}
+              alt={`Answer sheet page ${currentPage}`}
+              style={{
+                width: "100%",
+                height: "auto",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.18)",
+                borderRadius: "8px",
+                display: "block",
+                userSelect: "none"
+              }}
+            />
+          ) : documentUrl ? (
+            <div style={{ position: "relative", width: "100%", height: "800px" }}>
+              <iframe
+                src={`${documentUrl}#page=${currentPage}`}
+                title={documentName || `Answer Sheet Page ${currentPage}`}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  border: "none",
+                  borderRadius: "8px",
+                  boxShadow: "0 4px 15px rgba(0,0,0,0.18)",
+                  backgroundColor: "#ffffff",
+                  pointerEvents: activeTool && activeTool !== 'none' ? 'none' : 'auto'
+                }}
+              />
+            </div>
+          ) : (
+            <img
+              src={`/sheets/page${currentPage <= 5 ? currentPage : (currentPage % 5) + 1}.png`}
+              alt={`Answer sheet page ${currentPage}`}
+              style={{
+                width: "100%",
+                height: "auto",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.18)",
+                borderRadius: "8px",
+                display: "block",
+                userSelect: "none"
+              }}
+            />
+          )}
+
 
           {/* Render Page Stamps */}
           {pageStamps.map((stamp) => {

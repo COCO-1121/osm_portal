@@ -17,13 +17,21 @@ function SubjectAssignmentCard() {
       const storedEx = localStorage.getItem("examiner_id") || localStorage.getItem("examinerUserId");
       const storedInst = localStorage.getItem("institute_id");
       try {
+        // Fetch examiner assignment profile
         const response = await apiClient.get("/examiner/me/assignment");
+
+        // Fetch copies automatically assigned to this examiner
+        const copiesRes = await apiClient.get("/examiner/dashboard/assigned-copies");
+        console.log("Copies assigned to logged-in examiner:", copiesRes.data.copies);
+
         if (response.data) {
           setAssignment((prev) => ({
             ...prev,
             ...response.data,
             examiner_id: storedEx || response.data.examiner_id || prev.examiner_id,
             institute_id: storedInst || response.data.institute_id || prev.institute_id,
+            assigned_copies: copiesRes.data.copies || [],
+            total_copies: copiesRes.data.count || 0
           }));
         }
       } catch (err) {
@@ -41,6 +49,7 @@ function SubjectAssignmentCard() {
     }
     fetchAssignment();
   }, []);
+
 
   return (
     <div className="w-full max-w-3xl bg-white rounded-xl shadow-lg border border-gray-200 p-6">

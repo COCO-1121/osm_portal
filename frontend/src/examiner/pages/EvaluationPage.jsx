@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import EvaluationHeader from "../components/EvaluationHeader";
 import QuestionPanel from "../components/QuestionPanel";
 import ImageViewer from "../components/ImageViewer";
 import BottomToolbar from "../components/BottomToolbar";
+import apiClient from "../../shared/services/apiClient";
 import "../components/Evaluation.css";
 
 function EvaluationPage() {
   const params = useParams();
+  const location = useLocation();
+  const scriptInfo = location.state?.script;
   const subjectId = params.subjectId || params.scriptId || "0302";
   const navigate = useNavigate();
+
+  const [documentUrl, setDocumentUrl] = useState(null);
+  const [documentName, setDocumentName] = useState(scriptInfo?.subject || null);
+  const [loadingDocument, setLoadingDocument] = useState(false);
+  const [totalPages, setTotalPages] = useState(5);
 
   useEffect(() => {
     // Prevent back navigation using browser buttons
@@ -24,11 +32,79 @@ function EvaluationPage() {
     };
   }, []);
 
-  const [questions, setQuestions] = useState([
-    { id: "1", name: "Write short note on Band Theory", max: 5, obtained: "", steps: "0 Marks", pageRange: [1, 2] },
-    { id: "2", name: "Differentiate Conductor, Insulator, Semiconductor", max: 5, obtained: "", steps: "0 Marks", pageRange: [2, 3] },
-    { id: "3", name: "Derive relation between K and Chi", max: 10, obtained: "", steps: "0 Marks", pageRange: [4, 5] },
-  ]);
+  // Fetch real document copy if available
+  useEffect(() => {
+    let createdUrl = null;
+    const fetchDocument = async () => {
+      if (!subjectId) return;
+      setLoadingDocument(true);
+      try {
+        const targetBarcode = scriptInfo?.barcode || subjectId;
+        const targetDocId = scriptInfo?.docId;
+
+        let res = null;
+        try {
+          res = await apiClient.get(`/scanned-documents/by-barcode/${encodeURIComponent(targetBarcode)}/preview`, {
+            responseType: "blob"
+          });
+        } catch (err) {
+          if (targetDocId) {
+            res = await apiClient.get(`/scanned-documents/${targetDocId}/preview`, {
+              responseType: "blob"
+            });
+          } else if (!isNaN(targetBarcode)) {
+            res = await apiClient.get(`/scanned-documents/${targetBarcode}/preview`, {
+              responseType: "blob"
+            });
+          }
+        }
+
+        if (res && res.data) {
+          createdUrl = URL.createObjectURL(res.data);
+          setDocumentUrl(createdUrl);
+
+          const pagesHeader = res.headers["x-total-pages"] || res.headers["X-Total-Pages"];
+          if (pagesHeader) {
+            const count = parseInt(pagesHeader, 10);
+            if (!isNaN(count) && count > 0) {
+              setTotalPages(count);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch uploaded document for script", subjectId, "- using default sheet viewer.");
+      } finally {
+        setLoadingDocument(false);
+      }
+    };
+
+    fetchDocument();
+
+    return () => {
+      if (createdUrl) {
+        URL.revokeObjectURL(createdUrl);
+      }
+    };
+  }, [subjectId, scriptInfo]);
+
+  const generateDefaultQuestions = (totalMarks = 100) => {
+    const count = totalMarks === 100 ? 10 : (totalMarks === 70 ? 7 : 5);
+    const marksPerQ = Math.round(totalMarks / count);
+    const qList = [];
+    for (let i = 1; i <= count; i++) {
+      qList.push({
+        id: `${i}`,
+        name: `Question ${i}`,
+        max: marksPerQ,
+        obtained: "",
+        steps: "0 Marks",
+        pageRange: [i, i + 1]
+      });
+    }
+    return qList;
+  };
+
+  const [questions, setQuestions] = useState(() => generateDefaultQuestions(scriptInfo?.maxMarks || 100));
 
   const [activeQuestionId, setActiveQuestionId] = useState(null);
   const [isMarkingActive, setIsMarkingActive] = useState(false);
@@ -46,43 +122,55 @@ function EvaluationPage() {
 
   useEffect(() => {
     if (subjectId) {
-      if (localStorage.getItem(`evaluated_${subjectId}`)) {
-        navigate('/examiner/assessment', { replace: true });
-        return;
-      }
-      
       const savedData = localStorage.getItem(`evaluation_data_${subjectId}`);
       if (savedData) {
-        const parsed = JSON.parse(savedData);
-        if (parsed.questions) setQuestions(parsed.questions);
-        if (parsed.stamps) setStamps(parsed.stamps);
+        try {
+          const parsed = JSON.parse(savedData);
+          if (parsed.questions) setQuestions(parsed.questions);
+          if (parsed.stamps) setStamps(parsed.stamps);
+        } catch (e) {
+          console.warn("Could not parse saved evaluation data:", e);
+        }
       }
     }
-  }, [subjectId, navigate]);
+  }, [subjectId]);
 
-  const updateStats = (type) => {
+  const updateStats = async (type) => {
     const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
     const statsKey = 'daily_stats';
-    let dailyStats = JSON.parse(localStorage.getItem(statsKey));
-    
-    // Initialize if empty
-    if (!dailyStats) {
-      dailyStats = {};
-    }
+    let dailyStats = JSON.parse(localStorage.getItem(statsKey)) || {};
 
     const key = `${today}_${subjectId}`;
     if (!dailyStats[key]) {
-      // Determine subject name for new entries
-      const subjectName = subjectId === "0302" ? "ECONOMICS - Set 2" : "ACCOUNTANCY - Set 1";
+      const subjectName = scriptInfo?.subject || documentName || "PHYSICS (048)";
       dailyStats[key] = { subject: subjectName, completed: 0, rejected: 0, ufm: 0 };
     }
 
-    if (type === 'completed') dailyStats[key].completed += 1;
-    if (type === 'rejected') dailyStats[key].rejected += 1;
-    if (type === 'ufm') dailyStats[key].ufm += 1;
+    if (type === 'completed') {
+      dailyStats[key].completed += 1;
+      const prevTotal = parseInt(localStorage.getItem('total_eval_completed') || '0', 10);
+      const prevToday = parseInt(localStorage.getItem('today_eval_completed') || '0', 10);
+      localStorage.setItem('total_eval_completed', (prevTotal + 1).toString());
+      localStorage.setItem('today_eval_completed', (prevToday + 1).toString());
+    } else if (type === 'rejected') {
+      dailyStats[key].rejected += 1;
+    } else if (type === 'ufm') {
+      dailyStats[key].ufm += 1;
+    }
 
     localStorage.setItem(statsKey, JSON.stringify(dailyStats));
     localStorage.setItem(`evaluated_${subjectId}`, 'true');
+
+    // Patch backend document status if available
+    try {
+      const targetDocId = scriptInfo?.docId || (!isNaN(subjectId) ? subjectId : null);
+      const newStatus = type === 'completed' ? 'Completed' : (type === 'rejected' ? 'Rejected' : 'UFM');
+      if (targetDocId) {
+        await apiClient.patch(`/scanned-documents/${targetDocId}/status?status=${newStatus}`).catch(() => {});
+      }
+    } catch (e) {
+      console.warn("Could not patch document status to backend:", e);
+    }
     
     // Clear saved draft if submitted
     if (type === 'completed') {
@@ -352,7 +440,11 @@ function EvaluationPage() {
 
   return (
     <div className="evaluation-page">
-      <EvaluationHeader />
+      <EvaluationHeader
+        subjectName={scriptInfo?.subject || documentName || "PHYSICS (048)"}
+        subjectCode={scriptInfo?.barcode || subjectId}
+        scriptId={scriptInfo?.barcode || scriptInfo?.id || subjectId}
+      />
 
       <div className="evaluation-body">
         <QuestionPanel
@@ -365,7 +457,7 @@ function EvaluationPage() {
         <ImageViewer
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
-          totalPages={5}
+          totalPages={totalPages}
           onImageClick={handleImageClick}
           dialogState={dialogState}
           setDialogState={setDialogState}
@@ -376,12 +468,17 @@ function EvaluationPage() {
           onClearStamps={handleClearStamps}
           isMarkingActive={isMarkingActive}
           activeTool={activeTool}
+          documentUrl={documentUrl}
+          documentName={documentName}
+          loadingDocument={loadingDocument}
+          scriptBarcode={scriptInfo?.barcode || subjectId}
+          docId={scriptInfo?.docId}
         />
       </div>
 
       <BottomToolbar 
         currentPage={currentPage} 
-        totalPages={5} 
+        totalPages={totalPages} 
         onSave={handleSaveEvaluation}
         onSubmit={handleSubmit}
         onReject={handleReject}

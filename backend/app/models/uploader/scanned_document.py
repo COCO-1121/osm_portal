@@ -14,7 +14,8 @@ class ScannedDocument(Base):
     file_size = Column(BigInteger, nullable=True)                    # File size in bytes
     upload_time = Column(DateTime, default=datetime.utcnow)
     uploader_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
-    exam_id = Column(String(50), nullable=True)                       # Exam identifier
+    exam_id = Column(String(50), nullable=True)   
+    assigned_examiner_id = Column(UUID(as_uuid=True),ForeignKey("users.id"), nullable=True) # Exam identifier
     barcode = Column(String(100), nullable=True, unique=True)         # Barcode identifier
     status = Column(String(50), default="Pending")                    # Pending, Uploaded, Rejected
     encryption_status = Column(String(50), default="Encrypted")      # Encrypted, Decrypted

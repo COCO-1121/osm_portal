@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Response, Form
 from fastapi.responses import StreamingResponse
+from app.services.distribution_service import distribute_unassigned_copies
 from sqlalchemy.orm import Session
 from typing import Optional
 from pathlib import Path
@@ -11,6 +12,10 @@ import os
 import sys
 import subprocess
 import uuid
+
+user_site = os.path.expanduser(r"~\AppData\Roaming\Python\Python313\site-packages")
+if os.path.exists(user_site) and user_site not in sys.path:
+    sys.path.append(user_site)
 
 from app.db.session import get_uploader_db
 from app.models.uploader.scanned_document import ScannedDocument
@@ -27,7 +32,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/scanned-documents", tags=["Scanned Documents"])
+router = APIRouter(prefix="/scanned-documents", tags=["Scanned Documents"])
 
 
 def get_uploader_service(db: Session = Depends(get_uploader_db)) -> FileProcessorService:
@@ -179,6 +184,8 @@ async def upload_scanned_document(
             document.barcode = generate_barcode(document.id)
         document.status = "Uploaded"
         db.commit()
+        # Trigger auto-distribution to active examiners
+        distribute_unassigned_copies(db)
         db.refresh(document)
         
         return FileUploadResponse(
@@ -197,7 +204,6 @@ async def upload_scanned_document(
 @router.get("/by-barcode/{barcode}/preview")
 async def preview_document_by_barcode(
     barcode: str,
-    current_user: User = Depends(require_uploader_role),
     db: Session = Depends(get_uploader_db)
 ):
     """
@@ -216,12 +222,23 @@ async def preview_document_by_barcode(
         service = FileProcessorService(db)
         decrypted_content, filename = service.get_decrypted_file(document.id)
         
+        page_count = 1
+        try:
+            import fitz
+            doc = fitz.open(stream=decrypted_content, filetype="pdf")
+            page_count = len(doc)
+            doc.close()
+        except Exception as pdf_err:
+            logger.warning(f"Could not count PDF pages for barcode {barcode}: {pdf_err}")
+        
         return StreamingResponse(
             io.BytesIO(decrypted_content),
             media_type="application/pdf",
             headers={
                 "Content-Disposition": f"inline; filename=\"{document.original_filename}\"",
-                "X-File-Size": str(document.file_size or len(decrypted_content))
+                "X-File-Size": str(document.file_size or len(decrypted_content)),
+                "X-Total-Pages": str(page_count),
+                "Access-Control-Expose-Headers": "X-Total-Pages, Content-Disposition, X-File-Size"
             }
         )
     except HTTPException:
@@ -234,7 +251,6 @@ async def preview_document_by_barcode(
 @router.get("/{document_id}/preview")
 async def preview_scanned_document(
     document_id: int,
-    current_user: User = Depends(require_uploader_role),
     db: Session = Depends(get_uploader_db)
 ):
     """
@@ -259,12 +275,23 @@ async def preview_scanned_document(
         service = FileProcessorService(db)
         decrypted_content, filename = service.get_decrypted_file(document_id)
         
+        page_count = 1
+        try:
+            import fitz
+            doc = fitz.open(stream=decrypted_content, filetype="pdf")
+            page_count = len(doc)
+            doc.close()
+        except Exception as pdf_err:
+            logger.warning(f"Could not count PDF pages for docId {document_id}: {pdf_err}")
+
         return StreamingResponse(
             io.BytesIO(decrypted_content),
             media_type="application/pdf",
             headers={
                 "Content-Disposition": f"inline; filename=\"{document.original_filename}\"",
-                "X-File-Size": str(document.file_size or len(decrypted_content))
+                "X-File-Size": str(document.file_size or len(decrypted_content)),
+                "X-Total-Pages": str(page_count),
+                "Access-Control-Expose-Headers": "X-Total-Pages, Content-Disposition, X-File-Size"
             }
         )
     except HTTPException:
@@ -272,6 +299,83 @@ async def preview_scanned_document(
     except Exception as e:
         logger.error(f"Error previewing document {document_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to preview document")
+
+
+@router.get("/by-barcode/{barcode}/page/{page_num}")
+async def get_document_page_image_by_barcode(
+    barcode: str,
+    page_num: int,
+    db: Session = Depends(get_uploader_db)
+):
+    """
+    Renders and streams a specific page (PNG image) of a scanned document by barcode
+    """
+    try:
+        document = db.query(ScannedDocument).filter(
+            ScannedDocument.barcode == barcode
+        ).first()
+        
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        service = FileProcessorService(db)
+        decrypted_content, filename = service.get_decrypted_file(document.id)
+        
+        import fitz
+        doc = fitz.open(stream=decrypted_content, filetype="pdf")
+        if page_num < 1 or page_num > len(doc):
+            doc.close()
+            raise HTTPException(status_code=404, detail="Page index out of range")
+        
+        page = doc[page_num - 1]
+        pix = page.get_pixmap(dpi=150)
+        img_bytes = pix.tobytes("png")
+        doc.close()
+        
+        return StreamingResponse(io.BytesIO(img_bytes), media_type="image/png")
+    except Exception as e:
+        print("PAGE RENDER ERROR TRACE:", type(e), e, flush=True)
+        logger.error(f"Error rendering page {page_num} for barcode {barcode}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to render document page: {str(e)}")
+
+
+@router.get("/{document_id}/page/{page_num}")
+async def get_document_page_image_by_id(
+    document_id: int,
+    page_num: int,
+    db: Session = Depends(get_uploader_db)
+):
+    """
+    Renders and streams a specific page (PNG image) of a scanned document by document ID
+    """
+    try:
+        document = db.query(ScannedDocument).filter(
+            ScannedDocument.id == document_id
+        ).first()
+        
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+        
+        service = FileProcessorService(db)
+        decrypted_content, filename = service.get_decrypted_file(document.id)
+        
+        import fitz
+        doc = fitz.open(stream=decrypted_content, filetype="pdf")
+        if page_num < 1 or page_num > len(doc):
+            doc.close()
+            raise HTTPException(status_code=404, detail="Page index out of range")
+        
+        page = doc[page_num - 1]
+        pix = page.get_pixmap(dpi=150)
+        img_bytes = pix.tobytes("png")
+        doc.close()
+        
+        return StreamingResponse(io.BytesIO(img_bytes), media_type="image/png")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error rendering page {page_num} for doc ID {document_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to render document page")
 
 
 @router.get("/{document_id}/download")

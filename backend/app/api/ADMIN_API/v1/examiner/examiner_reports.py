@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import List, Dict, Any
+from app.db.session import get_uploader_db, get_db
 
 from app.dependencies.auth import get_current_examiner, get_db
 from app.models.user import User
@@ -28,7 +29,7 @@ def get_examiner_assignment(current_examiner: User = Depends(get_current_examine
 
 @router.get("/day-wise-report")
 def get_day_wise_report(
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_uploader_db),
     current_examiner: User = Depends(get_current_examiner)
 ):
     """
@@ -50,7 +51,8 @@ def get_day_wise_report(
             "date": today_str,
             "completed": 0,
             "rejected": 0,
-            "ufm": 0
+            "ufm": 0,
+            "total": 0
         }
     else:
         for idx, doc in enumerate(documents):
@@ -66,14 +68,17 @@ def get_day_wise_report(
                     "date": doc_date,
                     "completed": 0,
                     "rejected": 0,
-                    "ufm": 0
+                    "ufm": 0,
+                    "total": 0
                 }
 
-            if doc.status == "Completed" or doc.status == "Uploaded":
+            stats_map[key]["total"] += 1
+            status_upper = (doc.status or "").strip().upper()
+            if status_upper in ["COMPLETED"]:
                 stats_map[key]["completed"] += 1
-            elif doc.status == "Rejected":
+            elif status_upper in ["REJECTED"]:
                 stats_map[key]["rejected"] += 1
-            elif doc.status == "UFM":
+            elif status_upper in ["UFM"]:
                 stats_map[key]["ufm"] += 1
 
     report_data = []
@@ -85,7 +90,8 @@ def get_day_wise_report(
             "date": val["date"],
             "completed": val["completed"],
             "rejected": val["rejected"],
-            "ufm": val["ufm"]
+            "ufm": val["ufm"],
+            "total": val["total"]
         })
 
     return report_data
@@ -93,9 +99,10 @@ def get_day_wise_report(
 
 @router.get("/evaluator-report")
 def get_evaluator_report(
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_uploader_db),
     current_examiner: User = Depends(get_current_examiner)
 ):
+
     """
     Returns evaluator script report records for answer copies uploaded to the system.
     """
@@ -106,6 +113,8 @@ def get_evaluator_report(
         doc_date = doc.upload_time.strftime("%Y-%m-%d") if doc.upload_time else datetime.now().strftime("%Y-%m-%d")
         report_records.append({
             "id": doc.barcode or f"BC{doc.id:06d}",
+            "docId": doc.id,
+            "barcode": doc.barcode or f"BC{doc.id:06d}",
             "subject": getattr(doc, "original_filename", "PHYSICS (048)"),
             "date": doc_date,
             "status": "Completed" if doc.status in ["Uploaded", "Completed"] else doc.status,
