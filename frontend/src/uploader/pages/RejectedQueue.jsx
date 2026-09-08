@@ -1,33 +1,141 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaSearch, FaEye, FaTimes, FaUpload, FaHome, FaHistory, FaQuestionCircle, FaSignOutAlt, FaTimesCircle } from "react-icons/fa";
-
-const rejectedData = [
-  { barcode: "OSM-9823-112", subject: "Advanced Mathematics", reason: "Blurred Image" },
-  { barcode: "OSM-7742-009", subject: "Inorganic Chemistry", reason: "Missing Pages" },
-  { barcode: "OSM-1029-445", subject: "Macro Economics", reason: "Barcode Not Detected" },
-  { barcode: "OSM-5531-228", subject: "English Literature II", reason: "Poor Scan Quality" },
-  { barcode: "OSM-3391-771", subject: "History of Art", reason: "Duplicate Upload" },
-];
+import apiClient from "../../shared/services/apiClient";
 
 function RejectedQueue() {
   const navigate = useNavigate();
+  const [rejectedData, setRejectedData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterReason, setFilterReason] = useState("");
   const [selectedItem, setSelectedItem] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
   const reuploadInputRef = useRef(null);
+
+  const fetchRejectedQueue = async () => {
+    try {
+      setLoading(true);
+      const res = await apiClient.get("/rejected-queue");
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setRejectedData(res.data);
+        return;
+      }
+      
+      // Secondary attempt with explicit path
+      const res2 = await apiClient.get("/api/v1/rejected-queue");
+      if (Array.isArray(res2.data)) {
+        setRejectedData(res2.data);
+        return;
+      }
+      setRejectedData(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Failed to fetch uploader rejected queue:", err);
+      try {
+        const token =
+          localStorage.getItem("uploader_token") ||
+          localStorage.getItem("access_token") ||
+          localStorage.getItem("uploaderToken");
+        const baseUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+        const fallbackRes = await fetch(`${baseUrl}/api/v1/rejected-queue`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (fallbackRes.ok) {
+          const data = await fallbackRes.json();
+          setRejectedData(Array.isArray(data) ? data : []);
+          return;
+        }
+      } catch (fallbackErr) {
+        console.error("Fallback fetch also failed:", fallbackErr);
+      }
+      setRejectedData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRejectedQueue();
+  }, []);
+
+  const handleOpenItem = async (item) => {
+    setSelectedItem(item);
+    setPreviewUrl(null);
+    try {
+      // 1. Try dedicated rejected-queue preview endpoint
+      const res = await apiClient.get(`/rejected-queue/${encodeURIComponent(item.barcode)}/preview`, {
+        responseType: "blob",
+      });
+      if (res && res.data) {
+        const url = URL.createObjectURL(res.data);
+        setPreviewUrl(url);
+        return;
+      }
+    } catch (err) {
+      console.warn("Rejected queue preview failed, trying fallback preview:", err);
+    }
+
+    try {
+      // 2. Try scanned documents preview endpoint
+      const res = await apiClient.get(`/scanned-documents/by-barcode/${encodeURIComponent(item.barcode)}/preview`, {
+        responseType: "blob",
+      });
+      if (res && res.data) {
+        const url = URL.createObjectURL(res.data);
+        setPreviewUrl(url);
+        return;
+      }
+    } catch (err2) {
+      console.warn("Scanned documents preview failed, trying admin preview:", err2);
+    }
+
+    try {
+      // 3. Try admin preview endpoint
+      const res = await apiClient.get(`/admin/rejected-scripts/${encodeURIComponent(item.barcode)}/preview`, {
+        responseType: "blob",
+      });
+      if (res && res.data) {
+        const url = URL.createObjectURL(res.data);
+        setPreviewUrl(url);
+      }
+    } catch (err3) {
+      console.warn("Could not load PDF preview from any source:", err3);
+    }
+  };
 
   const handleReuploadClick = () => {
     reuploadInputRef.current?.click();
   };
 
-  const handleReuploadFileSelected = (e) => {
+  const handleReuploadFileSelected = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
+    if (!file || !selectedItem) return;
+
+    try {
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      if (selectedItem.barcode) {
+        formData.append("barcode", selectedItem.barcode);
+      }
+
+      await apiClient.post("/scanned-documents/reupload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      alert("Script re-uploaded successfully! It has been returned to evaluation processing.");
+      closeModal();
+      fetchRejectedQueue();
+    } catch (err) {
+      console.error("Failed to re-upload document:", err);
+      alert("Failed to re-upload script: " + (err.response?.data?.detail || err.message));
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const closeModal = () => {
@@ -45,12 +153,13 @@ function RejectedQueue() {
     }
   };
 
-  const reasons = [...new Set(rejectedData.map((item) => item.reason))];
+  const reasons = [...new Set(rejectedData.map((item) => item.reason).filter(Boolean))];
 
   const filteredData = rejectedData.filter((item) => {
-    const matchesSearch =
-      item.barcode.toLowerCase().includes(search.toLowerCase()) ||
-      item.subject.toLowerCase().includes(search.toLowerCase());
+    const barcodeStr = (item.barcode || "").toLowerCase();
+    const subjectStr = (item.subject || item.filename || "").toLowerCase();
+    const query = search.toLowerCase();
+    const matchesSearch = barcodeStr.includes(query) || subjectStr.includes(query);
     const matchesReason = filterReason ? item.reason === filterReason : true;
     return matchesSearch && matchesReason;
   });
@@ -155,8 +264,12 @@ function RejectedQueue() {
 
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <div style={{ textAlign: "right" }}>
-              <p style={{ fontSize: "14px", fontWeight: 600, color: "#1f2937", margin: 0 }}>Academic Examiner</p>
-              <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>ID: 992831</p>
+              <p style={{ fontSize: "14px", fontWeight: 600, color: "#1f2937", margin: 0 }}>
+                {localStorage.getItem("uploader_id") ? "Document Uploader" : "Document Uploader"}
+              </p>
+              <p style={{ fontSize: "12px", color: "#6b7280", margin: 0 }}>
+                ID: {localStorage.getItem("uploader_id") || "UPL001"}
+              </p>
             </div>
             <div
               style={{
@@ -172,7 +285,7 @@ function RejectedQueue() {
                 fontWeight: 600,
               }}
             >
-              EP
+              {(localStorage.getItem("uploader_id") || "UP").slice(0, 2).toUpperCase()}
             </div>
           </div>
         </header>
@@ -223,22 +336,30 @@ function RejectedQueue() {
                     <td style={{ padding: "12px 24px", color: "#374151", fontWeight: 500 }}>{item.barcode}</td>
                     <td style={{ padding: "12px 24px", color: "#374151" }}>{item.subject}</td>
                     <td style={{ padding: "12px 24px" }}>
-                      <span
-                        style={{
-                          background: "#fef2f2",
-                          color: "#dc2626",
-                          fontSize: "13px",
-                          fontWeight: 600,
-                          padding: "6px 14px",
-                          borderRadius: "9999px",
-                        }}
-                      >
-                        {item.reason}
-                      </span>
+                      <div>
+                        <span
+                          style={{
+                            background: "#fef2f2",
+                            color: "#dc2626",
+                            fontSize: "13px",
+                            fontWeight: 600,
+                            padding: "4px 12px",
+                            borderRadius: "9999px",
+                            display: "inline-block",
+                          }}
+                        >
+                          {item.reason}
+                        </span>
+                        {item.admin_remarks && (
+                          <div style={{ fontSize: "12px", color: "#4b5563", marginTop: "4px" }}>
+                            <strong>Admin Note:</strong> {item.admin_remarks}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: "12px 24px" }}>
                       <button
-                        onClick={() => { setPreviewUrl(null); setSelectedItem(item); }}
+                        onClick={() => handleOpenItem(item)}
                         style={{
                           display: "flex",
                           alignItems: "center",
@@ -262,7 +383,7 @@ function RejectedQueue() {
                 {filteredData.length === 0 && (
                   <tr>
                     <td colSpan="4" style={{ padding: "32px 24px", textAlign: "center", color: "#9ca3af" }}>
-                      No results found.
+                      {loading ? "Loading rejected scripts..." : "No rejected scripts in queue."}
                     </td>
                   </tr>
                 )}
@@ -353,10 +474,23 @@ function RejectedQueue() {
                 </div>
               )}
 
-              <p style={{ marginTop: "16px", fontSize: "14px", color: "#4b5563" }}>
-                Rejection reason:{" "}
-                <span style={{ color: "#dc2626", fontWeight: 600 }}>{selectedItem.reason}</span>
-              </p>
+              <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                <p style={{ margin: 0, fontSize: "14px", color: "#4b5563" }}>
+                  <strong>Rejection Reason:</strong>{" "}
+                  <span style={{ color: "#dc2626", fontWeight: 600 }}>{selectedItem.reason}</span>
+                </p>
+                {selectedItem.admin_remarks && (
+                  <p style={{ margin: 0, fontSize: "14px", color: "#4b5563" }}>
+                    <strong>Admin Remarks:</strong>{" "}
+                    <span style={{ color: "#1f2937", fontWeight: 500 }}>{selectedItem.admin_remarks}</span>
+                  </p>
+                )}
+                {selectedItem.examiner_remarks && selectedItem.examiner_remarks !== selectedItem.reason && (
+                  <p style={{ margin: 0, fontSize: "13px", color: "#6b7280" }}>
+                    <strong>Examiner Note:</strong> {selectedItem.examiner_remarks}
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Hidden file input for re-upload */}
@@ -371,6 +505,7 @@ function RejectedQueue() {
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", padding: "16px 24px", borderTop: "1px solid #e5e7eb" }}>
               <button
                 onClick={closeModal}
+                disabled={isUploading}
                 style={{
                   padding: "10px 16px",
                   borderRadius: "10px",
@@ -379,28 +514,29 @@ function RejectedQueue() {
                   fontSize: "14px",
                   fontWeight: 500,
                   background: "#ffffff",
-                  cursor: "pointer",
+                  cursor: isUploading ? "not-allowed" : "pointer",
                 }}
               >
                 Cancel
               </button>
               <button
                 onClick={handleReuploadClick}
+                disabled={isUploading}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
                   padding: "10px 16px",
                   borderRadius: "10px",
-                  background: "#2563eb",
+                  background: isUploading ? "#93c5fd" : "#2563eb",
                   color: "#ffffff",
                   fontSize: "14px",
                   fontWeight: 500,
                   border: "none",
-                  cursor: "pointer",
+                  cursor: isUploading ? "not-allowed" : "pointer",
                 }}
               >
-                <FaUpload /> Re-upload
+                <FaUpload /> {isUploading ? "Uploading..." : "Re-upload Script"}
               </button>
             </div>
           </div>

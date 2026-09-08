@@ -86,6 +86,15 @@ function ExaminerLoginCard() {
       });
       const { access_token } = response.data;
       localStorage.setItem('examinerToken', access_token);
+      localStorage.setItem('access_token', access_token);
+      localStorage.setItem('token', access_token);
+      if (response.data.examiner_id) {
+        localStorage.setItem('examiner_id', response.data.examiner_id);
+        localStorage.setItem('examinerUserId', response.data.examiner_id);
+      }
+      if (response.data.institute_id) {
+        localStorage.setItem('institute_id', response.data.institute_id);
+      }
       
       // Reset flags for new login session
       localStorage.removeItem("examiner_instructions_accepted");

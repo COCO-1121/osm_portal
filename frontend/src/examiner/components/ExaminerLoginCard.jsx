@@ -84,6 +84,8 @@ function ExaminerLoginCard() {
 
       if (data.access_token) {
         localStorage.setItem("access_token", data.access_token);
+        localStorage.setItem("examinerToken", data.access_token);
+        localStorage.setItem("examiner_token", data.access_token);
         localStorage.setItem("examiner_id", data.examiner_id || formData.examinerId);
         localStorage.setItem("institute_id", data.institute_id || formData.instituteId);
       }

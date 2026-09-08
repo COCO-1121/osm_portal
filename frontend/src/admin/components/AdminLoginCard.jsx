@@ -88,6 +88,8 @@ function AdminLoginCard() {
 
       // Store authentication information
       localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("adminToken", data.access_token);
+      localStorage.setItem("admin_token", data.access_token);
       localStorage.setItem("token_type", data.token_type);
       localStorage.setItem("admin_user", JSON.stringify(data.user));
       updateAdmin(data.user);

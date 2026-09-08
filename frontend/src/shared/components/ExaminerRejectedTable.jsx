@@ -7,52 +7,105 @@ export default function ExaminerRejectedTable() {
   const [rejectedScripts, setRejectedScripts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchRejectedScripts = async () => {
-      try {
-        const response = await apiClient.get("/examiner/rejected-scripts");
-        if (response.data && Array.isArray(response.data.scripts)) {
-          setRejectedScripts(response.data.scripts);
-        } else if (Array.isArray(response.data)) {
-          setRejectedScripts(response.data);
-        } else {
-          // Fallback to real local storage data
-          const stored = localStorage.getItem("examiner_rejected_scripts");
-          if (stored) {
-            setRejectedScripts(JSON.parse(stored));
-          } else {
-            setRejectedScripts([]);
-          }
-        }
-      } catch (err) {
-        // Fallback to real local storage data
-        const stored = localStorage.getItem("examiner_rejected_scripts");
-        if (stored) {
-          try {
-            setRejectedScripts(JSON.parse(stored));
-          } catch (e) {
-            setRejectedScripts([]);
-          }
-        } else {
-          setRejectedScripts([]);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
+  const [refreshing, setRefreshing] = useState(false);
 
-    fetchRejectedScripts();
+  const fetchRejectedScripts = async (isSilent = false) => {
+    if (!isSilent) setRefreshing(true);
+    try {
+      const response = await apiClient.get("/examiner/rejected-scripts");
+      if (response.data && Array.isArray(response.data.scripts) && response.data.scripts.length > 0) {
+        setRejectedScripts(response.data.scripts);
+        return;
+      } else if (Array.isArray(response.data) && response.data.length > 0) {
+        setRejectedScripts(response.data);
+        return;
+      }
+    } catch (err) {
+      console.warn("Primary fetch to /examiner/rejected-scripts failed, trying fallback:", err);
+    }
+
+    // Fallback 1: Direct fetch to backend /api/v1/examiner/rejected-scripts
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+      const token =
+        localStorage.getItem("examinerToken") ||
+        localStorage.getItem("access_token") ||
+        localStorage.getItem("token") ||
+        localStorage.getItem("adminToken");
+      const res = await fetch(`${baseUrl}/api/v1/examiner/rejected-scripts`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : data.scripts;
+        if (Array.isArray(items) && items.length > 0) {
+          setRejectedScripts(items);
+          return;
+        }
+      }
+    } catch (fallbackErr) {
+      console.warn("Direct fetch fallback failed:", fallbackErr);
+    }
+
+    // Fallback 2: Check localStorage
+    const stored = localStorage.getItem("examiner_rejected_scripts");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setRejectedScripts(Array.isArray(parsed) ? parsed : []);
+      } catch (e) {
+        setRejectedScripts([]);
+      }
+    } else {
+      setRejectedScripts([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchRejectedScripts(false).finally(() => {
+      setLoading(false);
+      setRefreshing(false);
+    });
+
+    const handleFocus = () => {
+      fetchRejectedScripts(true).finally(() => setRefreshing(false));
+    };
+    window.addEventListener("focus", handleFocus);
+
+    const interval = setInterval(() => {
+      fetchRejectedScripts(true).finally(() => setRefreshing(false));
+    }, 10000);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(interval);
+    };
   }, []);
 
   return (
     <div className="bg-white shadow rounded-xl border border-gray-200 overflow-hidden">
 
       {/* Header */}
-      <div className="px-6 py-5 border-b border-gray-100">
-        <h2 className="text-xl font-bold text-gray-800">Rejected Scripts</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Scripts returned to you by the admin for re-evaluation.
-        </p>
+      <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-gray-800">Rejected Scripts</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Scripts returned to you by the admin for re-evaluation.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setRefreshing(true);
+            fetchRejectedScripts(false).finally(() => setRefreshing(false));
+          }}
+          disabled={refreshing}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg shadow-xs transition cursor-pointer"
+          title="Refresh returned scripts list"
+        >
+          <span className={refreshing ? "animate-spin" : ""}>🔄</span>
+          <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
+        </button>
       </div>
 
       {/* Table */}

@@ -1,19 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 function PDFViewer({ script, fileUrl }) {
   const [page, setPage] = useState(1);
-  const totalPages = script?.total_pages || 12;
+  const [totalPages, setTotalPages] = useState(script?.total_pages || 1);
 
   const rawPath = script?.file_path || script?.fileUrl || fileUrl;
 
   const getPdfUrl = () => {
+    // 1. Explicit fileUrl prop
+    if (fileUrl) {
+      return fileUrl.startsWith("http") ? fileUrl : `${API_URL}${fileUrl}`;
+    }
+
+    // 2. script.file_url from API
+    if (script?.file_url) {
+      return script.file_url.startsWith("http") ? script.file_url : `${API_URL}${script.file_url}`;
+    }
+
+    // 3. Admin rejected script preview by rejection_id
+    if (script?.rejection_id) {
+      return `${API_URL}/api/v1/admin/rejected-scripts/${script.rejection_id}/preview`;
+    }
+
+    // 4. Decrypted preview by barcode
+    if (script?.barcode) {
+      return `${API_URL}/api/v1/scanned-documents/by-barcode/${encodeURIComponent(script.barcode)}/preview`;
+    }
+
+    // 5. Fallback for static file path
     if (!rawPath) return null;
     if (rawPath.startsWith("http://") || rawPath.startsWith("https://")) {
       return rawPath;
     }
     let path = rawPath.replace(/\\/g, "/");
+    if (/^[A-Za-z]:\//.test(path)) {
+      path = path.replace(/^[A-Za-z]:\//, "/");
+    }
     if (!path.startsWith("/")) {
       path = `/${path}`;
     }

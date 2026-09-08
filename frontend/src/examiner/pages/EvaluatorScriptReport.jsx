@@ -231,6 +231,10 @@ function EvaluatorScriptReport() {
 
           <option value="Pending">Pending</option>
 
+          <option value="UFM">UFM</option>
+
+          <option value="Rejected">Rejected</option>
+
         </select>
 
       </div>
@@ -298,7 +302,9 @@ function EvaluatorScriptReport() {
                       className={
                         item.status === "Completed"
                           ? "badge completed"
-                          : "badge pending"
+                          : (item.status && item.status.includes("UFM")
+                            ? "badge ufm"
+                            : (item.status === "Rejected" ? "badge rejected" : "badge pending"))
                       }
                     >
                       {item.status}

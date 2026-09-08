@@ -42,9 +42,15 @@ function ImageViewer({
   const [zoom, setZoom] = useState(0.85);
   const [rotation, setRotation] = useState(0);
   const [hoveredStampId, setHoveredStampId] = useState(null);
+  const [imageFailed, setImageFailed] = useState(false);
 
   const targetCode = scriptBarcode || scriptId;
-  const pageImageUrl = targetCode
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [targetCode, currentPage]);
+
+  const pageImageUrl = (targetCode && !imageFailed)
     ? `http://127.0.0.1:8000/api/v1/scanned-documents/by-barcode/${encodeURIComponent(targetCode)}/page/${currentPage}`
     : null;
 
@@ -56,15 +62,23 @@ function ImageViewer({
     setRotation(0);
   };
 
-  const handlePrev = () => {
+  const handlePrev = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+      setCurrentPage((prev) => Math.max(1, prev - 1));
     }
   };
 
-  const handleNext = () => {
+  const handleNext = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
+      setCurrentPage((prev) => Math.min(totalPages, prev + 1));
     }
   };
 
@@ -195,8 +209,10 @@ function ImageViewer({
             </div>
           ) : pageImageUrl ? (
             <img
+              key={`backend_page_${currentPage}`}
               src={pageImageUrl}
               alt={`Answer sheet page ${currentPage}`}
+              onError={() => setImageFailed(true)}
               style={{
                 width: "100%",
                 height: "auto",
@@ -206,25 +222,10 @@ function ImageViewer({
                 userSelect: "none"
               }}
             />
-          ) : documentUrl ? (
-            <div style={{ position: "relative", width: "100%", height: "800px" }}>
-              <iframe
-                src={`${documentUrl}#page=${currentPage}`}
-                title={documentName || `Answer Sheet Page ${currentPage}`}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  border: "none",
-                  borderRadius: "8px",
-                  boxShadow: "0 4px 15px rgba(0,0,0,0.18)",
-                  backgroundColor: "#ffffff",
-                  pointerEvents: activeTool && activeTool !== 'none' ? 'none' : 'auto'
-                }}
-              />
-            </div>
           ) : (
             <img
-              src={`/sheets/page${currentPage <= 5 ? currentPage : (currentPage % 5) + 1}.png`}
+              key={`fallback_page_${currentPage}`}
+              src={`/sheets/page${currentPage <= 5 ? currentPage : ((currentPage - 1) % 5) + 1}.png`}
               alt={`Answer sheet page ${currentPage}`}
               style={{
                 width: "100%",
@@ -506,35 +507,42 @@ function ImageViewer({
           const isGraded = pageNum <= currentPage;
 
           return (
-            <div
+            <button
               key={pageNum}
-              onClick={() => setCurrentPage(pageNum)}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentPage(pageNum);
+              }}
               style={{
-                width: "24px",
-                height: "20px",
+                width: "28px",
+                height: "22px",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                fontSize: "10px",
+                fontSize: "11px",
                 fontWeight: "bold",
                 cursor: "pointer",
-                borderRadius: "3px",
+                borderRadius: "4px",
                 color: "#ffffff",
                 backgroundColor: isSelected ? "#d32f2f" : (isGraded ? "#2e7d32" : "#9e9e9e"),
                 border: isSelected ? "2px solid #000" : "none",
                 transform: isSelected ? "scale(1.1)" : "none",
-                transition: "all 0.1s ease",
+                transition: "all 0.15s ease",
+                padding: 0
               }}
+              title={`Jump to Page ${pageNum}`}
             >
               {pageNum.toString().padStart(2, "0")}
-            </div>
+            </button>
           );
         })}
       </div>
 
       {/* Footer */}
-      <div className="viewer-footer" style={{ borderTop: "none" }}>
+      <div className="viewer-footer" style={{ borderTop: "none", position: "relative", zIndex: 30 }}>
         <button
+          type="button"
           className="page-btn"
           onClick={handlePrev}
           disabled={currentPage <= 1}
@@ -544,11 +552,12 @@ function ImageViewer({
           Previous
         </button>
 
-        <span style={{ fontWeight: "600" }}>
+        <span style={{ fontWeight: "600", fontSize: "14px", color: "#334155" }}>
           Page {currentPage} of {totalPages}
         </span>
 
         <button
+          type="button"
           className="page-btn"
           onClick={handleNext}
           disabled={currentPage >= totalPages}

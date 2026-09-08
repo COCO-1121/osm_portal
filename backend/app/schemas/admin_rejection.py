@@ -18,6 +18,8 @@ class AdminRejectedScriptResponse(BaseModel):
     examiner_remarks: str | None
 
     file_path: str
+    file_url: str | None = None
+    total_pages: int | None = None
 
     status: str
     rejected_at: datetime

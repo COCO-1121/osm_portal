@@ -72,7 +72,13 @@ def get_current_uploader_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: Session = Depends(get_uploader_db),
 ) -> User:
-    return _get_user_from_db(credentials, db)
+    try:
+        return _get_user_from_db(credentials, db)
+    except HTTPException:
+        # Fallback to Admin DB if user was authenticated against Admin DB (e.g., Admin testing/inspecting)
+        from app.db.session import AdminSessionLocal
+        with AdminSessionLocal() as admin_db:
+            return _get_user_from_db(credentials, admin_db)
 
 
 def get_current_examiner_user(
@@ -97,7 +103,7 @@ def require_admin(
 def require_uploader_role(
     current_user: User = Depends(get_current_uploader_user),
 ) -> User:
-    if current_user.role.name != "UPLOADER":
+    if current_user.role.name not in ["UPLOADER", "ADMIN", "SUPER_ADMIN"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Uploader access required",

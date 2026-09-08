@@ -116,7 +116,14 @@ function SubjectAssignmentCard() {
       <div className="mt-5 flex justify-center">
 
         <button
-          onClick={() => navigate("/examiner/evaluation")}
+          onClick={() => {
+            const firstCopy = assignment.assigned_copies && assignment.assigned_copies.length > 0 ? assignment.assigned_copies[0] : null;
+            if (firstCopy) {
+              navigate(`/examiner/evaluation/${firstCopy.barcode}`, { state: { script: firstCopy } });
+            } else {
+              navigate("/examiner/assessment");
+            }
+          }}
           className="bg-blue-700 hover:bg-blue-800 text-white px-10 py-2.5 rounded-lg font-semibold transition duration-200 shadow-md hover:shadow-lg"
         >
           Access Session

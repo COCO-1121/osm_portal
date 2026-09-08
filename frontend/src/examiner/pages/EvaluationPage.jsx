@@ -16,6 +16,9 @@ function EvaluationPage() {
 
   const [documentUrl, setDocumentUrl] = useState(null);
   const [documentName, setDocumentName] = useState(scriptInfo?.subject || null);
+  const [loadedBarcode, setLoadedBarcode] = useState(
+    scriptInfo?.barcode || (subjectId && (subjectId.startsWith("OSM-") || subjectId.startsWith("BC")) ? subjectId : null)
+  );
   const [loadingDocument, setLoadingDocument] = useState(false);
   const [totalPages, setTotalPages] = useState(5);
 
@@ -56,6 +59,13 @@ function EvaluationPage() {
             res = await apiClient.get(`/scanned-documents/${targetBarcode}/preview`, {
               responseType: "blob"
             });
+          } else {
+            // Fallback: attempt latest preview if barcode was generic like '048'
+            try {
+              res = await apiClient.get(`/scanned-documents/preview-latest`, {
+                responseType: "blob"
+              });
+            } catch (e) {}
           }
         }
 
@@ -69,6 +79,36 @@ function EvaluationPage() {
             if (!isNaN(count) && count > 0) {
               setTotalPages(count);
             }
+          }
+
+          const docBarcode = res.headers["x-document-barcode"] || res.headers["X-Document-Barcode"];
+          if (docBarcode) {
+            setLoadedBarcode(docBarcode);
+          }
+        }
+
+        // If barcode not loaded yet, resolve real barcode via doc lookup or assigned copies
+        if (!loadedBarcode) {
+          if (!isNaN(subjectId) || targetDocId) {
+            try {
+              const docIdToQuery = targetDocId || subjectId;
+              const docRes = await apiClient.get(`/scanned-documents/${docIdToQuery}`);
+              if (docRes.data && docRes.data.barcode) {
+                setLoadedBarcode(docRes.data.barcode);
+              }
+            } catch (e) {}
+          }
+
+          if (!loadedBarcode) {
+            try {
+              const copiesRes = await apiClient.get(`/examiner/dashboard/assigned-copies`);
+              if (copiesRes.data && copiesRes.data.copies && copiesRes.data.copies.length > 0) {
+                const matched = copiesRes.data.copies.find(c => c.barcode === subjectId || String(c.id) === String(subjectId)) || copiesRes.data.copies[0];
+                if (matched && matched.barcode) {
+                  setLoadedBarcode(matched.barcode);
+                }
+              }
+            } catch (e) {}
           }
         }
       } catch (err) {
@@ -128,9 +168,7 @@ function EvaluationPage() {
           const parsed = JSON.parse(savedData);
           if (parsed.questions) setQuestions(parsed.questions);
           if (parsed.stamps) setStamps(parsed.stamps);
-        } catch (e) {
-          console.warn("Could not parse saved evaluation data:", e);
-        }
+        } catch (e) {}
       }
     }
   }, [subjectId]);
@@ -140,7 +178,8 @@ function EvaluationPage() {
     const statsKey = 'daily_stats';
     let dailyStats = JSON.parse(localStorage.getItem(statsKey)) || {};
 
-    const key = `${today}_${subjectId}`;
+    const key = `${today}_048`;
+
     if (!dailyStats[key]) {
       const subjectName = scriptInfo?.subject || documentName || "PHYSICS (048)";
       dailyStats[key] = { subject: subjectName, completed: 0, rejected: 0, ufm: 0 };
@@ -190,17 +229,25 @@ function EvaluationPage() {
     const unmarked = currentQuestions.filter(q => q.obtained === "");
     
     if (unmarked.length > 0) {
-      const unmarkedIds = unmarked.map(q => q.id).join(', ');
-      const makeNA = window.confirm(`Step Marks Pending : Q.No. ${unmarkedIds}\n\nAre you sure you want to mark them as Not Attempted (NA)?`);
-      
-      if (makeNA) {
-        currentQuestions = currentQuestions.map(q => q.obtained === "" ? { ...q, obtained: "NA", steps: "NA" } : q);
+      const confirmZero = window.confirm(
+        `There are ${unmarked.length} unmarked questions. Do you want to allocate 0 marks to them and complete evaluation?`
+      );
+      if (confirmZero) {
+        currentQuestions = currentQuestions.map(q => {
+          if (q.obtained === "") {
+            return { ...q, obtained: "0", steps: "0 Marks" };
+          }
+          return q;
+        });
         setQuestions(currentQuestions);
-      } else {
-        return; // Prevent submission
+        handleCompleteEvaluation(currentQuestions);
       }
+    } else {
+      handleCompleteEvaluation(currentQuestions);
     }
+  };
 
+  const handleCompleteEvaluation = (currentQuestions = questions) => {
     let totalScore = 0;
     let maxTotalScore = 0;
     currentQuestions.forEach(q => {
@@ -220,6 +267,35 @@ function EvaluationPage() {
 
   const [modalState, setModalState] = useState({ type: null, visible: false });
   const [selectedReason, setSelectedReason] = useState("");
+  const [modalRemarks, setModalRemarks] = useState("");
+  const [submittingModal, setSubmittingModal] = useState(false);
+  const [scriptUfmInfo, setScriptUfmInfo] = useState(null);
+
+  // Check if current script has an active UFM case or review status
+  useEffect(() => {
+    const targetBarcode = loadedBarcode || scriptInfo?.barcode || subjectId;
+    if (!targetBarcode) return;
+
+    const checkUfmStatus = async () => {
+      try {
+        const res = await apiClient.get(`/examiner/ufm-status/${encodeURIComponent(targetBarcode)}`);
+        if (res.data && res.data.has_ufm) {
+          setScriptUfmInfo(res.data);
+        }
+      } catch (e) {
+        // Fallback: check scriptInfo status
+        if (scriptInfo && scriptInfo.status && scriptInfo.status.toUpperCase().includes("UFM")) {
+          setScriptUfmInfo({
+            has_ufm: true,
+            status: scriptInfo.status,
+            reason: "Suspected Unfair Means"
+          });
+        }
+      }
+    };
+
+    checkUfmStatus();
+  }, [loadedBarcode, scriptInfo, subjectId]);
 
   const ufmReasons = [
     "Writing Roll No./Reg. No./Religious Symbol/Prayer/Appeal",
@@ -245,27 +321,61 @@ function EvaluationPage() {
   const handleReject = () => {
     setModalState({ type: 'REJECT', visible: true });
     setSelectedReason("");
+    setModalRemarks("");
   };
 
   const handleUFM = () => {
     setModalState({ type: 'UFM', visible: true });
     setSelectedReason("");
+    setModalRemarks("");
   };
 
-  const handleModalSubmit = () => {
+  const handleModalSubmit = async () => {
     if (!selectedReason) {
       alert("Please select a reason.");
       return;
     }
     
+    const targetBarcode = loadedBarcode || scriptInfo?.barcode || subjectId;
+    setSubmittingModal(true);
+
     if (modalState.type === 'REJECT') {
-      updateStats('rejected');
-    } else {
-      updateStats('ufm');
+      try {
+        await apiClient.post("/examiner/reject-script", {
+          barcode: targetBarcode,
+          reason: selectedReason,
+          examiner_remarks: modalRemarks || `Rejected by examiner: ${selectedReason}`,
+          subject: scriptInfo?.subject || documentName || "PHYSICS (048)"
+        });
+        alert(`Script ${targetBarcode} rejected and sent to assigned Admin for verification.`);
+        updateStats('rejected');
+        setModalState({ type: null, visible: false });
+        navigate('/examiner/day-wise-report', { replace: true });
+      } catch (err) {
+        console.error("Failed to post script rejection:", err);
+        alert(`Failed to reject script: ${err?.response?.data?.detail || err.message}`);
+      } finally {
+        setSubmittingModal(false);
+      }
+    } else if (modalState.type === 'UFM') {
+      try {
+        await apiClient.post("/examiner/report-ufm", {
+          barcode: targetBarcode,
+          reason: selectedReason,
+          examiner_remarks: modalRemarks || `Reported UFM by examiner: ${selectedReason}`,
+          subject: scriptInfo?.subject || documentName || "PHYSICS (048)"
+        });
+        alert(`Script ${targetBarcode} marked under UFM and sent to Admin for review.`);
+        updateStats('ufm');
+        setModalState({ type: null, visible: false });
+        navigate('/examiner/day-wise-report', { replace: true });
+      } catch (err) {
+        console.error("Failed to post UFM report:", err);
+        alert(`Failed to report UFM: ${err?.response?.data?.detail || err.message}`);
+      } finally {
+        setSubmittingModal(false);
+      }
     }
-    
-    setModalState({ type: null, visible: false });
-    navigate('/examiner/day-wise-report', { replace: true });
   };
 
   const handleQuestionSelect = (id, event) => {
@@ -446,6 +556,37 @@ function EvaluationPage() {
         scriptId={scriptInfo?.barcode || scriptInfo?.id || subjectId}
       />
 
+      {/* UFM Notice Banner */}
+      {scriptUfmInfo && scriptUfmInfo.has_ufm && (
+        <div style={{
+          backgroundColor: scriptUfmInfo.status === 'UFM_CONFIRMED' ? '#fee2e2' : (scriptUfmInfo.status === 'RETURNED_TO_EXAMINER' ? '#eff6ff' : '#fef3c7'),
+          color: scriptUfmInfo.status === 'UFM_CONFIRMED' ? '#991b1b' : (scriptUfmInfo.status === 'RETURNED_TO_EXAMINER' ? '#1e40af' : '#92400e'),
+          borderBottom: `1px solid ${scriptUfmInfo.status === 'UFM_CONFIRMED' ? '#fca5a5' : (scriptUfmInfo.status === 'RETURNED_TO_EXAMINER' ? '#bfdbfe' : '#fde68a')}`,
+          padding: '10px 24px',
+          fontSize: '13px',
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          zIndex: 10
+        }}>
+          <div>
+            {scriptUfmInfo.status === 'PENDING_ADMIN_REVIEW' && (
+              <span>⚠️ This script was reported for UFM ({scriptUfmInfo.reason}) and is currently under Admin review. Evaluation is locked.</span>
+            )}
+            {scriptUfmInfo.status === 'UFM_CONFIRMED' && (
+              <span>🚫 UFM Confirmed by Admin ({scriptUfmInfo.reason}). Paper cancelled, marks = 0. Evaluation locked.</span>
+            )}
+            {scriptUfmInfo.status === 'RETURNED_TO_EXAMINER' && (
+              <span>ℹ️ Returned by Admin: {scriptUfmInfo.admin_remarks || 'UFM cleared. Continue evaluation.'}</span>
+            )}
+          </div>
+          <span style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em', background: 'rgba(0,0,0,0.08)', padding: '3px 8px', borderRadius: '4px' }}>
+            Status: {scriptUfmInfo.status}
+          </span>
+        </div>
+      )}
+
       <div className="evaluation-body">
         <QuestionPanel
           questions={questions}
@@ -515,7 +656,7 @@ function EvaluationPage() {
               >×</button>
             </div>
             
-            <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '15px' }}>
               <label style={{ display: 'block', marginBottom: '8px', color: '#555', fontSize: '13px' }}>
                 Reason for {modalState.type === 'UFM' ? 'UFM' : 'Reject'}:
               </label>
@@ -524,25 +665,40 @@ function EvaluationPage() {
                 onChange={(e) => setSelectedReason(e.target.value)}
                 style={{ width: '100%', padding: '8px', border: '1px solid #93c5fd', borderRadius: '4px', fontSize: '14px', outline: 'none' }}
               >
-                <option value="" disabled></option>
+                <option value="" disabled>-- Select Reason --</option>
                 {(modalState.type === 'UFM' ? ufmReasons : rejectReasons).map((r, i) => (
                   <option key={i} value={r}>{r}</option>
                 ))}
               </select>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', color: '#555', fontSize: '13px' }}>
+                Additional Remarks / Details (Optional):
+              </label>
+              <textarea
+                value={modalRemarks}
+                onChange={(e) => setModalRemarks(e.target.value)}
+                placeholder={modalState.type === 'UFM' ? "e.g. Roll number written on page 3, distinct ink used..." : "e.g. Page 2 is blurry or unreadable..."}
+                rows={3}
+                style={{ width: '100%', padding: '8px', border: '1px solid #93c5fd', borderRadius: '4px', fontSize: '13px', outline: 'none', resize: 'vertical' }}
+              />
             </div>
             
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
               <button 
                 onClick={() => setModalState({ type: null, visible: false })}
                 style={{ padding: '6px 16px', border: '1px solid #ccc', backgroundColor: '#64748b', color: 'white', borderRadius: '4px', cursor: 'pointer' }}
+                disabled={submittingModal}
               >
                 Close
               </button>
               <button 
                 onClick={handleModalSubmit}
-                style={{ padding: '6px 16px', border: 'none', backgroundColor: '#dc2626', color: 'white', borderRadius: '4px', cursor: 'pointer' }}
+                style={{ padding: '6px 16px', border: 'none', backgroundColor: '#dc2626', color: 'white', borderRadius: '4px', cursor: submittingModal ? 'not-allowed' : 'pointer', opacity: submittingModal ? 0.7 : 1 }}
+                disabled={submittingModal}
               >
-                Submit
+                {submittingModal ? "Submitting..." : "Submit"}
               </button>
             </div>
           </div>

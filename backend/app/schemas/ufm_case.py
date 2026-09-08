@@ -6,6 +6,7 @@ class ReportUFMRequest(BaseModel):
     barcode: str
     reason: str = Field(..., min_length=2, max_length=100)
     examiner_remarks: str | None = None
+    subject: str | None = None
 
 
 class UFMCaseResponse(BaseModel):
@@ -18,6 +19,7 @@ class UFMCaseResponse(BaseModel):
     reason: str
     examiner_remarks: str | None = None
     file_path: str
+    file_url: str | None = None
     status: str  # PENDING_ADMIN_REVIEW, UFM_CONFIRMED, RETURNED_TO_EXAMINER
     reported_at: datetime
 

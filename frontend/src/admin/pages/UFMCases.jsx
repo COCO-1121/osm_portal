@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaSearch, FaExclamationTriangle, FaEye, FaChevronDown, FaCalendarAlt, FaTimes } from "react-icons/fa";
+import { FaSearch, FaExclamationTriangle, FaEye, FaChevronDown, FaCalendarAlt, FaTimes, FaSyncAlt } from "react-icons/fa";
 import AdminLayout from "../../shared/layouts/AdminLayout";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
@@ -93,48 +93,75 @@ function UFMCases() {
   const navigate = useNavigate();
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
   const [selectedReason, setSelectedReason] = useState("ALL");
   const [dateFilter, setDateFilter] = useState("");
 
-  useEffect(() => {
-    const fetchUFMCases = async () => {
-      try {
-        const token = localStorage.getItem("access_token");
-
-        if (!token) {
-          throw new Error("Admin authentication token not found.");
-        }
-
-        const response = await fetch(`${API_URL}/api/v1/admin/ufm-cases`, {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => null);
-          throw new Error(
-            errorData?.detail || "Failed to fetch UFM cases."
-          );
-        }
-
-        const data = await response.json();
-        setCases(data);
-      } catch (err) {
-        console.error("UFM cases fetch error:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+  const fetchUFMCases = useCallback(async (isSilent = false) => {
+    try {
+      if (!isSilent) {
+        setRefreshing(true);
       }
-    };
+      const token =
+        localStorage.getItem("adminToken") ||
+        localStorage.getItem("admin_token") ||
+        localStorage.getItem("access_token");
 
-    fetchUFMCases();
+      if (!token) {
+        throw new Error("Admin authentication token not found. Please log in as Admin.");
+      }
+
+      const response = await fetch(`${API_URL}/api/v1/admin/ufm-cases`, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(
+          errorData?.detail || "Failed to fetch UFM cases."
+        );
+      }
+
+      const data = await response.json();
+      setCases(data);
+      setError("");
+    } catch (err) {
+      console.error("UFM cases fetch error:", err);
+      if (!isSilent) {
+        setError(err.message);
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchUFMCases(false);
+
+    // Auto-refresh when admin tab regains focus
+    const handleFocus = () => {
+      fetchUFMCases(true);
+    };
+    window.addEventListener("focus", handleFocus);
+
+    // Poll periodically every 10 seconds for real-time UFM updates
+    const pollTimer = setInterval(() => {
+      fetchUFMCases(true);
+    }, 10000);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(pollTimer);
+    };
+  }, [fetchUFMCases]);
 
   const getStatusBadge = (status) => {
     switch (status) {
@@ -300,6 +327,22 @@ function UFMCases() {
                 )}
               </div>
             </div>
+
+            {/* Refresh Button */}
+            <button
+              type="button"
+              onClick={() => fetchUFMCases(false)}
+              disabled={refreshing}
+              title="Refresh UFM cases list"
+              className={`flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-sm font-medium transition shadow-xs whitespace-nowrap cursor-pointer ${
+                refreshing
+                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                  : "bg-white text-gray-700 border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+              }`}
+            >
+              <FaSyncAlt className={`text-xs ${refreshing ? "animate-spin text-blue-600" : "text-gray-500"}`} />
+              <span>{refreshing ? "Refreshing..." : "Refresh"}</span>
+            </button>
           </div>
         </div>
 

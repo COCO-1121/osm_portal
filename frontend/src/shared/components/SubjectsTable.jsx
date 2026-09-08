@@ -99,7 +99,10 @@ export default function SubjectsTable() {
                 <td className="py-3 px-4">{sub.available}</td>
                 <td className="py-3 px-4">
                   <button 
-                    onClick={() => navigate(`/examiner/evaluation/${sub.code}`)}
+                    onClick={() => {
+                      const targetId = sub.first_barcode || sub.code || "048";
+                      navigate(`/examiner/evaluation/${targetId}`);
+                    }}
                     className="bg-blue-600 px-5 py-2 rounded text-white font-medium hover:bg-blue-700 transition shadow-sm"
                   >
                     Start

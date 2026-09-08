@@ -12,12 +12,30 @@ export const apiClient = axios.create({
 // Add request interceptor to attach JWT token
 apiClient.interceptors.request.use(
   (config) => {
-    const token =
-      localStorage.getItem('access_token') ||
-      localStorage.getItem('examinerToken') ||
-      localStorage.getItem('adminToken') ||
-      localStorage.getItem('uploaderToken') ||
-      localStorage.getItem('token');
+    let token = null;
+    const url = config.url || '';
+    if (url.includes('/examiner')) {
+      token = localStorage.getItem('examinerToken') || localStorage.getItem('access_token');
+    } else if (url.includes('/uploader') || url.includes('/scanned-documents') || url.includes('/rejected-queue')) {
+      token =
+        localStorage.getItem('uploader_token') ||
+        localStorage.getItem('uploaderToken') ||
+        localStorage.getItem('access_token') ||
+        localStorage.getItem('adminToken');
+    } else if (url.includes('/admin')) {
+      token = localStorage.getItem('adminToken') || localStorage.getItem('access_token');
+    }
+
+    if (!token) {
+      token =
+        localStorage.getItem('uploader_token') ||
+        localStorage.getItem('uploaderToken') ||
+        localStorage.getItem('access_token') ||
+        localStorage.getItem('adminToken') ||
+        localStorage.getItem('examinerToken') ||
+        localStorage.getItem('token');
+    }
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

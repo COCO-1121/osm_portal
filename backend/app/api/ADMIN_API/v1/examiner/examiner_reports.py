@@ -35,16 +35,13 @@ def get_day_wise_report(
     """
     Returns daily evaluation summary for the logged-in examiner based on answer scripts / scanned documents.
     """
-    # Query answer scripts or scanned documents
     documents = db.query(ScannedDocument).all()
 
     today_str = datetime.now().strftime("%d-%m-%Y")
 
-    # Group records by (valuation_date, subject)
     stats_map: Dict[str, Dict[str, Any]] = {}
 
     if not documents:
-        # Default dynamic entry for current date if no uploaded copies exist yet
         stats_map[f"{today_str}_048"] = {
             "subject": getattr(current_examiner, "assigned_subject", "PHYSICS (048)"),
             "code": "048",
@@ -55,7 +52,7 @@ def get_day_wise_report(
             "total": 0
         }
     else:
-        for idx, doc in enumerate(documents):
+        for doc in documents:
             doc_date = doc.upload_time.strftime("%d-%m-%Y") if doc.upload_time else today_str
             subj_code = getattr(doc, "exam_id", "048") or "048"
             subj_name = getattr(doc, "original_filename", "PHYSICS (048)")
@@ -74,11 +71,11 @@ def get_day_wise_report(
 
             stats_map[key]["total"] += 1
             status_upper = (doc.status or "").strip().upper()
-            if status_upper in ["COMPLETED"]:
+            if status_upper in ["COMPLETED", "EVALUATED"]:
                 stats_map[key]["completed"] += 1
-            elif status_upper in ["REJECTED"]:
+            elif "REJECT" in status_upper:
                 stats_map[key]["rejected"] += 1
-            elif status_upper in ["UFM"]:
+            elif "UFM" in status_upper:
                 stats_map[key]["ufm"] += 1
 
     report_data = []
@@ -102,25 +99,45 @@ def get_evaluator_report(
     db: Session = Depends(get_uploader_db),
     current_examiner: User = Depends(get_current_examiner)
 ):
-
     """
     Returns evaluator script report records for answer copies uploaded to the system.
     """
-    documents = db.query(ScannedDocument).all()
+    documents = db.query(ScannedDocument).order_by(ScannedDocument.id.desc()).all()
 
     report_records = []
     for doc in documents:
         doc_date = doc.upload_time.strftime("%Y-%m-%d") if doc.upload_time else datetime.now().strftime("%Y-%m-%d")
+        status_raw = (doc.status or "").strip().upper()
+
+        if status_raw in ["COMPLETED", "EVALUATED"]:
+            display_status = "Completed"
+            marks_val = 85
+            perc_val = "85%"
+        elif "REJECT" in status_raw:
+            display_status = "Rejected"
+            marks_val = 0
+            perc_val = "0%"
+        elif "UFM" in status_raw:
+            display_status = "UFM"
+            marks_val = 0
+            perc_val = "0%"
+        else:
+            # ASSIGNED, Uploaded, Pending
+            display_status = "Pending"
+            marks_val = "--"
+            perc_val = "--"
+
         report_records.append({
-            "id": doc.barcode or f"BC{doc.id:06d}",
+            "id": doc.barcode or f"OSM-{doc.id}",
             "docId": doc.id,
-            "barcode": doc.barcode or f"BC{doc.id:06d}",
+            "barcode": doc.barcode or f"OSM-{doc.id}",
             "subject": getattr(doc, "original_filename", "PHYSICS (048)"),
             "date": doc_date,
-            "status": "Completed" if doc.status in ["Uploaded", "Completed"] else doc.status,
+            "status": display_status,
+            "raw_status": doc.status,
             "maxMarks": 100,
-            "marks": 85 if doc.status in ["Uploaded", "Completed"] else 0,
-            "percentage": "85%" if doc.status in ["Uploaded", "Completed"] else "0%",
+            "marks": marks_val,
+            "percentage": perc_val,
             "time": "12m 30s"
         })
 

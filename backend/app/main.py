@@ -31,10 +31,14 @@ print("Loaded examiner_auth_router:", examiner_auth_router is not None)
 try:
     from app.api.ADMIN_API.v1.examiner.dashboard import router as examiner_dashboard_router
     from app.api.ADMIN_API.v1.examiner.examiner_reports import router as examiner_reports_router
+    from app.api.ADMIN_API.v1.examiner.rejections import router as examiner_rejections_router
+    from app.api.ADMIN_API.v1.examiner.ufm import router as examiner_ufm_router
 except ImportError as e:
     print("FAILED TO IMPORT EXAMINER DASHBOARD ROUTER:", e)
     examiner_dashboard_router = None
     examiner_reports_router = None
+    examiner_rejections_router = None
+    examiner_ufm_router = None
 
 # Uploader Routers
 try:
@@ -96,6 +100,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Register Unified Auth Router
@@ -117,6 +122,14 @@ if examiner_dashboard_router:
     app.include_router(examiner_dashboard_router)
 if examiner_reports_router:
     app.include_router(examiner_reports_router)
+if examiner_rejections_router:
+    app.include_router(examiner_rejections_router)
+    app.include_router(examiner_rejections_router, prefix="/api")
+    app.include_router(examiner_rejections_router, prefix="/api/v1")
+if examiner_ufm_router:
+    app.include_router(examiner_ufm_router)
+    app.include_router(examiner_ufm_router, prefix="/api")
+    app.include_router(examiner_ufm_router, prefix="/api/v1")
 
 # Register Uploader Routers (if available)
 if uploader_auth_router:
@@ -132,6 +145,9 @@ if uploader_exams_router:
     app.include_router(uploader_exams_router, prefix="/api")
 if uploader_rejected_router:
     app.include_router(uploader_rejected_router)
+    app.include_router(uploader_rejected_router, prefix="/api")
+    app.include_router(uploader_rejected_router, prefix="/api/v1")
+    app.include_router(uploader_rejected_router, prefix="/api/v1/uploader")
 
 # Register Scan Router
 if scan_router:

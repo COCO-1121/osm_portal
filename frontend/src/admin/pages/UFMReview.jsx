@@ -34,7 +34,10 @@ function UFMReview() {
   useEffect(() => {
     const fetchUFMCase = async () => {
       try {
-        const token = localStorage.getItem("access_token");
+        const token =
+          localStorage.getItem("adminToken") ||
+          localStorage.getItem("admin_token") ||
+          localStorage.getItem("access_token");
 
         if (!token) {
           throw new Error("Admin authentication token not found.");
@@ -74,7 +77,10 @@ function UFMReview() {
   const handleDecisionSubmit = async (decision, remarks = "") => {
     try {
       setActionLoading(true);
-      const token = localStorage.getItem("access_token");
+      const token =
+        localStorage.getItem("adminToken") ||
+        localStorage.getItem("admin_token") ||
+        localStorage.getItem("access_token");
 
       if (!token) {
         throw new Error("Admin authentication token not found.");
