@@ -168,29 +168,7 @@ function DayWiseReport() {
 
           </tbody>
 
-          <tfoot>
 
-            <tr>
-
-              <td colSpan="4">
-                <strong>Total</strong>
-              </td>
-
-              <td>
-                <strong>{totalCompleted}</strong>
-              </td>
-
-              <td>
-                <strong>{totalRejected}</strong>
-              </td>
-
-              <td>
-                <strong>{totalUFM}</strong>
-              </td>
-
-            </tr>
-
-          </tfoot>
 
         </table>
 

@@ -24,7 +24,7 @@ function ExaminerLoginCard() {
   });
 
   const [showPassword, setShowPassword] = useState(false);
-
+  const [loginError, setLoginError] = useState("");
   const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
@@ -50,9 +50,11 @@ function ExaminerLoginCard() {
       contact: "",
     });
     setErrors({});
+    setLoginError("");
   };
 
   const handleLogin = async () => {
+    setLoginError("");
     const newErrors = {};
 
     if (!formData.userId.trim()) {
@@ -103,7 +105,11 @@ function ExaminerLoginCard() {
       navigate("/examiner/instructions");
     } catch (error) {
       console.error("Login failed", error);
-      // Optionally add UI feedback here
+      if (error.response && error.response.data && error.response.data.detail) {
+        setLoginError(error.response.data.detail);
+      } else {
+        setLoginError("Invalid credentials or server error. Please try again.");
+      }
     }
   };
 
@@ -274,12 +280,13 @@ function ExaminerLoginCard() {
 
       {/* Forgot Password */}
 
-      <div className="flex justify-end mt-4">
-
-        <p className="text-sm text-gray-500">
+      <div className="flex justify-between items-center mt-4">
+        <div className="text-red-500 text-sm font-medium">
+          {loginError && <p>{loginError}</p>}
+        </div>
+        <p className="text-sm text-gray-500 text-right">
           Forgot Password? Contact Admin.
         </p>
-
       </div>
 
       {/* Buttons */}

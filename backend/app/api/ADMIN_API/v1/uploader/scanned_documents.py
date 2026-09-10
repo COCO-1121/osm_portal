@@ -145,7 +145,7 @@ def get_scanned_document(
 @router.post("/upload", response_model=FileUploadResponse)
 async def upload_scanned_document(
     file: UploadFile = File(...),
-    exam: Optional[str] = Form(None),
+    exam_id: Optional[str] = Form(None),
     date: Optional[str] = Form(None),
     current_user: User = Depends(require_uploader_role),
     db: Session = Depends(get_uploader_db)
@@ -175,7 +175,7 @@ async def upload_scanned_document(
             temp_path, 
             original_filename=file.filename,
             uploaded_by=current_user.id,
-            exam_id=exam
+            exam_id=exam_id
         )
 
         # --- Connectivity fix ---
@@ -519,11 +519,12 @@ def get_document_info(
 def update_document_status(
     document_id: int,
     status: str,
-    current_user: User = Depends(require_uploader_role),
+    marks: Optional[float] = None,
+    max_marks: Optional[int] = None,
     db: Session = Depends(get_uploader_db)
 ):
     """
-    Update document status (e.g., from Pending to Uploaded)
+    Update document status (e.g., from Pending to Uploaded) and optionally update marks
     """
     try:
         document = db.query(ScannedDocument).filter(
@@ -534,6 +535,11 @@ def update_document_status(
             raise HTTPException(status_code=404, detail="Document not found")
         
         document.status = status
+        if marks is not None:
+            document.marks = marks
+        if max_marks is not None:
+            document.max_marks = max_marks
+            
         db.commit()
         db.refresh(document)
         

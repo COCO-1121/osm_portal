@@ -1,5 +1,11 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
+
+// Wrapper that forces EvaluationPage to fully remount when the script/barcode changes
+function KeyedEvaluationPage() {
+  const { scriptId, subjectId } = useParams();
+  return <EvaluationPage key={scriptId || subjectId || 'default'} />;
+}
 
 // Shared Pages & Components
 import RoleSelectionPage from './shared/pages/RoleSelectionPage';
@@ -187,12 +193,12 @@ function App() {
 
         <Route
           path="/examiner/evaluation/:scriptId"
-          element={<EvaluationPage />}
+          element={<KeyedEvaluationPage />}
         />
 
         <Route
           path="/evaluation/:subjectId"
-          element={<EvaluationPage />}
+          element={<KeyedEvaluationPage />}
         />
 
 

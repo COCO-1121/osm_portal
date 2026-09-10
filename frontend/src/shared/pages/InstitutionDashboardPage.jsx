@@ -11,6 +11,7 @@ import {
   FaList,
   FaEye,
   FaEyeSlash,
+  FaBook,
 } from "react-icons/fa";
 import "./InstitutionDashboard.css";
 
@@ -70,6 +71,13 @@ function InstitutionDashboardPage() {
   const [uploaderPhoneDigits, setUploaderPhoneDigits] = useState("");
   const [uploaderName, setUploaderName] = useState("");
 
+  // Form states - Exam
+  const [examCode, setExamCode] = useState("");
+  const [examDate, setExamDate] = useState("");
+  const [numStudents, setNumStudents] = useState("");
+  const [exams, setExams] = useState([]);
+  const [loadingExams, setLoadingExams] = useState(false);
+
   // Notification banners
   const [msg, setMsg] = useState({ text: "", type: "" });
   const [submitting, setSubmitting] = useState(false);
@@ -89,8 +97,24 @@ function InstitutionDashboardPage() {
     }
   };
 
+  const fetchExams = async () => {
+    setLoadingExams(true);
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/institution/exams?institute_id=${instituteId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setExams(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch exams:", err);
+    } finally {
+      setLoadingExams(false);
+    }
+  };
+
   useEffect(() => {
     fetchAccounts();
+    fetchExams();
   }, [instituteId]);
 
   const handleLogout = () => {
@@ -208,6 +232,46 @@ function InstitutionDashboardPage() {
     }
   };
 
+  const handleCreateExam = async (e) => {
+    e.preventDefault();
+    setMsg({ text: "", type: "" });
+    setSubmitting(true);
+
+    try {
+      const res = await fetch("http://localhost:8000/api/v1/institution/create-exam", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          exam_code: examCode.trim(),
+          exam_date: examDate,
+          num_students: parseInt(numStudents, 10),
+          institute_id: instituteId,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.detail || "Failed to register Exam");
+      }
+
+      setMsg({
+        text: `Exam '${data.exam_code}' successfully registered!`,
+        type: "success",
+      });
+
+      setExamCode("");
+      setExamDate("");
+      setNumStudents("");
+
+      fetchExams();
+    } catch (err) {
+      setMsg({ text: err.message, type: "error" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="inst-dashboard-layout">
       {/* Top Navbar */}
@@ -254,6 +318,12 @@ function InstitutionDashboardPage() {
                 onClick={() => setActiveTab("create-uploader")}
               >
                 <FaCloudUploadAlt /> Create Uploader
+              </button>
+              <button
+                className={`tab-btn ${activeTab === "register-exam" ? "active" : ""}`}
+                onClick={() => setActiveTab("register-exam")}
+              >
+                <FaBook /> Register Exam
               </button>
             </div>
 
@@ -440,17 +510,103 @@ function InstitutionDashboardPage() {
                   </button>
                 </form>
               )}
+
+              {activeTab === "register-exam" && (
+                <form onSubmit={handleCreateExam} className="account-form">
+                  <div className="form-title">
+                    <h4>Register Exam</h4>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="field-block">
+                      <label>Exam Code *</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. EXM-101"
+                        value={examCode}
+                        onChange={(e) => setExamCode(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="field-block">
+                      <label>Exam Date *</label>
+                      <input
+                        type="date"
+                        value={examDate}
+                        onChange={(e) => setExamDate(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="field-block">
+                      <label>No. of Students *</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 500"
+                        value={numStudents}
+                        onChange={(e) => setNumStudents(e.target.value)}
+                        min="1"
+                        required
+                      />
+                    </div>
+                    <div className="field-block">
+                      <label>Institute ID (Inherited)</label>
+                      <input type="text" value={instituteId} disabled />
+                    </div>
+                  </div>
+
+                  <button type="submit" className="submit-btn uploader-btn" disabled={submitting}>
+                    <FaPlus /> {submitting ? "Registering..." : "Register Exam"}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
 
-          {/* Right Column: Database Accounts List */}
+          {/* Right Column: Database Accounts List / Exams List */}
           <div className="accounts-section">
             <div className="accounts-header">
-              <h4><FaList /> Accounts Saved in OSM Database</h4>
-              <button className="refresh-btn" onClick={fetchAccounts}>Refresh</button>
+              <h4>
+                <FaList /> {activeTab === "register-exam" ? "Registered Exams" : "Accounts Saved in OSM Database"}
+              </h4>
+              <button className="refresh-btn" onClick={activeTab === "register-exam" ? fetchExams : fetchAccounts}>
+                Refresh
+              </button>
             </div>
 
-            {loadingAccounts ? (
+            {activeTab === "register-exam" ? (
+              // Exams List Table
+              loadingExams ? (
+                <div className="loading-state">Loading exams...</div>
+              ) : exams.length === 0 ? (
+                <div className="empty-state">No exams found for {instituteId}.</div>
+              ) : (
+                <div className="table-responsive">
+                  <table className="accounts-table">
+                    <thead>
+                      <tr>
+                        <th>Exam Code</th>
+                        <th>Name</th>
+                        <th>Exam Date</th>
+                        <th>Students</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {exams.map((exam, idx) => (
+                        <tr key={idx}>
+                          <td><strong>{exam.exam_code}</strong></td>
+                          <td>{exam.name}</td>
+                          <td>{exam.exam_date}</td>
+                          <td>{exam.num_students || "-"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            ) : loadingAccounts ? (
               <div className="loading-state">Loading accounts...</div>
             ) : accounts.length === 0 ? (
               <div className="empty-state">No Admin or Uploader accounts found for {instituteId}.</div>

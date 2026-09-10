@@ -1,6 +1,21 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import apiClient from "../services/apiClient";
+import { FaPlay } from "react-icons/fa";
+
+const getStatusStyle = (status) => {
+  const s = (status || "").toLowerCase();
+  if (s.includes("completed") || s.includes("evaluated")) {
+    return { bg: "bg-green-100", text: "text-green-800", dot: "bg-green-500", ring: "ring-green-600/20" };
+  }
+  if (s.includes("pending") || s.includes("uploaded") || s.includes("assigned")) {
+    return { bg: "bg-yellow-100", text: "text-yellow-800", dot: "bg-yellow-500", ring: "ring-yellow-600/20" };
+  }
+  if (s.includes("reject") || s.includes("ufm")) {
+    return { bg: "bg-red-100", text: "text-red-800", dot: "bg-red-500", ring: "ring-red-600/20" };
+  }
+  return { bg: "bg-gray-100", text: "text-gray-800", dot: "bg-gray-500", ring: "ring-gray-600/20" };
+};
 
 function SubjectAssignmentCard() {
   const navigate = useNavigate();
@@ -59,76 +74,54 @@ function SubjectAssignmentCard() {
         Examiner Subject Assignment
       </h1>
 
-      {/* Examiner Details */}
-      <div className="space-y-3 text-base">
-
-        <div className="flex justify-between items-center border-b pb-2">
-          <span className="font-medium text-gray-500">
-            Examiner ID
-          </span>
-
-          <span className="font-semibold text-gray-800">
-            {loading ? "..." : assignment.examiner_id}
-          </span>
-        </div>
-
-        <div className="flex justify-between items-center border-b pb-2">
-          <span className="font-medium text-gray-500">
-            Institute ID
-          </span>
-
-          <span className="font-semibold text-gray-800">
-            {loading ? "..." : assignment.institute_id}
-          </span>
-        </div>
-
-        <div className="flex justify-between items-center border-b pb-2">
-          <span className="font-medium text-gray-500">
-            Session
-          </span>
-
-          <span className="font-semibold text-gray-800">
-            {loading ? "..." : assignment.session}
-          </span>
-        </div>
-
-      </div>
-
-      {/* Assigned Subject */}
-      <div className="mt-5 rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
-
-        <p className="uppercase tracking-[3px] text-gray-600 text-xs font-semibold">
-          Assigned Subject
-        </p>
-
-        <h2 className="text-4xl font-bold text-blue-700 mt-2">
-          {loading ? "Loading..." : assignment.assigned_subject}
-        </h2>
-
-        <p className="text-gray-600 text-sm leading-6 mt-3">
-          This subject has been assigned by the administrator.
-          Subject assignment cannot be modified by the examiner.
-        </p>
-
-      </div>
-
-      {/* Button */}
-      <div className="mt-5 flex justify-center">
-
-        <button
-          onClick={() => {
-            const firstCopy = assignment.assigned_copies && assignment.assigned_copies.length > 0 ? assignment.assigned_copies[0] : null;
-            if (firstCopy) {
-              navigate(`/examiner/evaluation/${firstCopy.barcode}`, { state: { script: firstCopy } });
-            } else {
-              navigate("/examiner/assessment");
-            }
-          }}
-          className="bg-blue-700 hover:bg-blue-800 text-white px-10 py-2.5 rounded-lg font-semibold transition duration-200 shadow-md hover:shadow-lg"
-        >
-          Access Session
-        </button>
-
+      {/* Assigned Scripts Table */}
+      <div className="mt-8">
+        <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Assigned Scripts</h3>
+        {loading ? (
+          <p className="text-gray-500 text-center text-sm py-4">Loading assigned scripts...</p>
+        ) : assignment.assigned_copies && assignment.assigned_copies.length > 0 ? (
+          <div className="overflow-hidden rounded-lg border border-gray-200 shadow-sm">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barcode</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {assignment.assigned_copies.map((copy) => {
+                  const statusStyle = getStatusStyle(copy.status);
+                  return (
+                    <tr key={copy.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{copy.barcode}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{copy.subject}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ring-1 inset-ring ${statusStyle.bg} ${statusStyle.text} ${statusStyle.ring}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${statusStyle.dot}`}></span>
+                          {copy.status || "Assigned"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <button
+                          onClick={() => navigate(`/examiner/evaluation/${copy.barcode}`, { state: { script: copy } })}
+                          className="flex items-center gap-2 text-blue-600 hover:text-blue-900 font-medium transition-colors"
+                        >
+                          <FaPlay className="text-xs" /> Evaluate
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-6 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+            <p className="text-gray-500 text-sm">No scripts have been assigned to you yet.</p>
+          </div>
+        )}
       </div>
 
     </div>

@@ -265,3 +265,24 @@ This document tracks all changes made to primary entry-point files and secondary
   - `frontend/src/shared/components/ExaminerRejectedTable.jsx`:
     - Added auto-refresh on window `focus`, 10-second polling interval, and manual Refresh button with loading animation.
 
+### [2026-09-10] Institution Module Register Exam Feature
+- **Target Files**: `backend/app/main.py`, `backend/app/api/ADMIN_API/v1/institution/institution.py`, `frontend/src/shared/pages/InstitutionDashboardPage.jsx`
+- **Reason**: Add "Register Exam" capability to the Institution Dashboard.
+- **Changes Applied**:
+  - `backend/app/main.py`: Added automatic schema auto-migration for `exam_code`, `num_students`, and `institute_id` columns to `exams` table.
+  - `backend/app/api/ADMIN_API/v1/institution/institution.py`: Added `POST /create-exam` and `GET /exams` endpoints for institutions to register and view exams.
+  - `frontend/src/shared/pages/InstitutionDashboardPage.jsx`: Added "Register Exam" tab, creation form, and dynamic registered exams list to the Institution Dashboard UI.
+
+### [2026-09-10] Institution Exams Not Visible in Uploader Dashboard - Fix
+- **Target Files**: `backend/app/api/ADMIN_API/v1/uploader/exams.py`, `frontend/src/uploader/pages/UploaderDashboardPage.jsx`
+- **Root Cause**: Two bugs: (1) `ExamResponse` was missing `exam_code` field; (2) 401 (expired token) was silently swallowed, showing "No exams on this date" instead of redirecting to re-login.
+- **Changes Applied**:
+  - `backend/app/api/ADMIN_API/v1/uploader/exams.py`: Added `exam_code: Optional[str]` to `ExamResponse`. Updated `list_exams` to explicitly map all fields.
+  - `frontend/src/uploader/pages/UploaderDashboardPage.jsx`: Changed dropdown `value` from `exam.name` to `exam.id`. Label now shows `exam_code — name`. Added 401 redirect to login. Added `console.error` for non-401 failures.
+
+### [2026-09-10] Examiner Same Copy Bug - Full Fix via KeyedEvaluationPage
+- **Target Files**: `frontend/src/App.jsx`
+- **Root Cause**: React Router reuses the same `EvaluationPage` component instance when navigating between different scripts (e.g., `/examiner/evaluation/BC001` → `/examiner/evaluation/BC002`). This meant all `useState` values (documentUrl blob, stamps, questions) persisted from the previous script. The `key` fix on `<img>` was not sufficient alone because the parent component state wasn't resetting.
+- **Fix**: Added a `KeyedEvaluationPage` wrapper in `App.jsx` that reads the `scriptId` URL param and passes it as a `key` to `<EvaluationPage>`. When the barcode changes, the key changes, React fully unmounts the old EvaluationPage and mounts a fresh one — clearing all state and forcing a fresh document fetch for the new script.
+
+

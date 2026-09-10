@@ -92,3 +92,23 @@ class CreatedAccountResponse(BaseModel):
     institute_id: str
     role: str
     created_at: Optional[str] = None
+
+
+from datetime import date
+
+class CreateExamRequest(BaseModel):
+    exam_code: str
+    exam_date: date
+    num_students: int
+    institute_id: str
+    name: Optional[str] = None
+
+
+class ExamResponse(BaseModel):
+    id: int
+    exam_code: Optional[str] = None
+    name: str
+    exam_date: date
+    num_students: Optional[int] = None
+    institute_id: Optional[str] = None
+    created_at: Optional[str] = None

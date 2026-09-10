@@ -20,6 +20,7 @@ class ExamCreate(BaseModel):
 class ExamResponse(BaseModel):
     id: int
     name: str
+    exam_code: Optional[str] = None
     exam_date: date_type
 
     class Config:
@@ -41,7 +42,16 @@ def list_exams(
     query = db.query(Exam)
     if date:
         query = query.filter(Exam.exam_date == date)
-    return query.order_by(Exam.name).all()
+    exams = query.order_by(Exam.name).all()
+    return [
+        ExamResponse(
+            id=e.id,
+            name=e.name,
+            exam_code=e.exam_code,
+            exam_date=e.exam_date
+        )
+        for e in exams
+    ]
 
 
 @router.post("/", response_model=ExamResponse)

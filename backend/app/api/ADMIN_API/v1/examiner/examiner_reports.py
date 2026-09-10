@@ -111,8 +111,13 @@ def get_evaluator_report(
 
         if status_raw in ["COMPLETED", "EVALUATED"]:
             display_status = "Completed"
-            marks_val = 85
-            perc_val = "85%"
+            marks_val = getattr(doc, "marks", None)
+            max_marks_val = getattr(doc, "max_marks", 100)
+            if marks_val is not None:
+                perc_val = f"{round((marks_val / max_marks_val) * 100)}%"
+            else:
+                marks_val = "--"
+                perc_val = "--"
         elif "REJECT" in status_raw:
             display_status = "Rejected"
             marks_val = 0
@@ -135,10 +140,11 @@ def get_evaluator_report(
             "date": doc_date,
             "status": display_status,
             "raw_status": doc.status,
-            "maxMarks": 100,
+            "maxMarks": getattr(doc, "max_marks", 100) or 100,
             "marks": marks_val,
             "percentage": perc_val,
-            "time": "12m 30s"
+            "time": "12m 30s",
+            "assigned_to": str(doc.assigned_examiner_id) if doc.assigned_examiner_id else "Unassigned"
         })
 
     return report_records

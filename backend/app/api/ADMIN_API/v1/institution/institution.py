@@ -10,6 +10,7 @@ from app.db.session import (
     ExaminerSessionLocal,
     UploaderSessionLocal,
     get_db,
+    get_uploader_db
 )
 from app.models.institution import Institution
 from app.models.role import Role
@@ -20,7 +21,10 @@ from app.schemas.institution import (
     CreatedAccountResponse,
     InstitutionLoginRequest,
     InstitutionLoginResponse,
+    CreateExamRequest,
+    ExamResponse,
 )
+from app.models.uploader.exam import Exam
 
 router = APIRouter(
     prefix="/api/v1/institution",
@@ -265,3 +269,62 @@ def get_created_accounts(
             )
 
     return response
+
+
+@router.post("/create-exam", response_model=ExamResponse)
+def create_exam(
+    payload: CreateExamRequest,
+    db: Session = Depends(get_uploader_db)
+):
+    """
+    Institution Action: Create Exam
+    """
+    name = payload.name if payload.name else f"Exam: {payload.exam_code}"
+    
+    new_exam = Exam(
+        name=name,
+        exam_code=payload.exam_code,
+        exam_date=payload.exam_date,
+        num_students=payload.num_students,
+        institute_id=payload.institute_id
+    )
+    db.add(new_exam)
+    db.commit()
+    db.refresh(new_exam)
+    
+    return ExamResponse(
+        id=new_exam.id,
+        exam_code=new_exam.exam_code,
+        name=new_exam.name,
+        exam_date=new_exam.exam_date,
+        num_students=new_exam.num_students,
+        institute_id=new_exam.institute_id,
+        created_at=new_exam.created_at.isoformat() if new_exam.created_at else None
+    )
+
+
+@router.get("/exams", response_model=List[ExamResponse])
+def get_exams(
+    institute_id: str,
+    db: Session = Depends(get_uploader_db)
+):
+    """
+    Retrieve all Exams for the given Institution.
+    """
+    exams = db.scalars(
+        select(Exam)
+        .where(Exam.institute_id == institute_id)
+        .order_by(Exam.created_at.desc())
+    ).all()
+
+    return [
+        ExamResponse(
+            id=e.id,
+            exam_code=e.exam_code,
+            name=e.name,
+            exam_date=e.exam_date,
+            num_students=e.num_students,
+            institute_id=e.institute_id,
+            created_at=e.created_at.isoformat() if e.created_at else None
+        ) for e in exams
+    ]

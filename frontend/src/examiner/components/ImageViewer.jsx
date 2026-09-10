@@ -51,7 +51,7 @@ function ImageViewer({
   }, [targetCode, currentPage]);
 
   const pageImageUrl = (targetCode && !imageFailed)
-    ? `http://127.0.0.1:8000/api/v1/scanned-documents/by-barcode/${encodeURIComponent(targetCode)}/page/${currentPage}`
+    ? `http://127.0.0.1:8000/api/v1/scanned-documents/by-barcode/${encodeURIComponent(targetCode)}/page/${currentPage}?cb=${Date.now()}`
     : null;
 
   const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.1, 2));

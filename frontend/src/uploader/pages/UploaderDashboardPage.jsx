@@ -58,7 +58,16 @@ function UploaderDashboardPage() {
           }
         );
 
+        if (response.status === 401) {
+          // Token expired — redirect to login
+          localStorage.removeItem("uploader_token");
+          localStorage.removeItem("uploader_id");
+          navigate("/uploader-login");
+          return;
+        }
+
         if (!response.ok) {
+          console.error("Exam fetch failed:", response.status, await response.text());
           setExams([]);
           setExamsLoading(false);
           return;
@@ -441,8 +450,8 @@ function UploaderDashboardPage() {
                   >
                     <option value="">{examDropdownPlaceholder}</option>
                     {exams.map((exam) => (
-                      <option key={exam.id} value={exam.name}>
-                        {exam.name}
+                      <option key={exam.id} value={exam.id}>
+                        {exam.exam_code ? `${exam.exam_code} — ${exam.name}` : exam.name}
                       </option>
                     ))}
                   </select>

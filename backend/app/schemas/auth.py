@@ -13,7 +13,7 @@ class LoginRequest(BaseModel):
     institute_id: str
     password: str
     contact: str
-    dob: str
+    dob: str | None = None
 
 
 class UserResponse(BaseModel):

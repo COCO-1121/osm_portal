@@ -18,6 +18,8 @@ class ScannedDocument(Base):
     assigned_examiner_id = Column(UUID(as_uuid=True),ForeignKey("users.id"), nullable=True) # Exam identifier
     barcode = Column(String(100), nullable=True, unique=True)         # Barcode identifier
     status = Column(String(50), default="Pending")                    # Pending, Uploaded, Rejected
+    marks = Column(Integer, nullable=True)                           # Actual marks assigned
+    max_marks = Column(Integer, nullable=True)                       # Maximum possible marks
     encryption_status = Column(String(50), default="Encrypted")      # Encrypted, Decrypted
     mime_type = Column(String(100), nullable=False)                  # Content MIME type
     created_at = Column(DateTime, default=datetime.utcnow)

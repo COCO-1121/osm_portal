@@ -96,7 +96,7 @@ app.mount(
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -300,12 +300,23 @@ def startup_event():
     seed_exams()
 
     # Start file monitor watchdog task
+    global file_monitor_service
     try:
         db = UploaderSessionLocal()
-        file_monitor = start_file_monitor(db, uploaded_by=None)
+        file_monitor_service = start_file_monitor(db, uploaded_by=None)
         logger.info("File monitor service started with watchdog.")
     except Exception as e:
         logger.error(f"Failed to start file monitor: {str(e)}")
+
+@app.on_event("shutdown")
+def shutdown_event():
+    global file_monitor_service
+    if 'file_monitor_service' in globals() and file_monitor_service:
+        try:
+            file_monitor_service.stop()
+            logger.info("File monitor service stopped.")
+        except Exception as e:
+            logger.error(f"Error stopping file monitor: {str(e)}")
 
 
 @app.get("/")

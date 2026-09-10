@@ -47,16 +47,16 @@ function EvaluationPage() {
 
         let res = null;
         try {
-          res = await apiClient.get(`/scanned-documents/by-barcode/${encodeURIComponent(targetBarcode)}/preview`, {
+          res = await apiClient.get(`/scanned-documents/by-barcode/${encodeURIComponent(targetBarcode)}/preview?cb=${Date.now()}`, {
             responseType: "blob"
           });
         } catch (err) {
           if (targetDocId) {
-            res = await apiClient.get(`/scanned-documents/${targetDocId}/preview`, {
+            res = await apiClient.get(`/scanned-documents/${targetDocId}/preview?cb=${Date.now()}`, {
               responseType: "blob"
             });
           } else if (!isNaN(targetBarcode)) {
-            res = await apiClient.get(`/scanned-documents/${targetBarcode}/preview`, {
+            res = await apiClient.get(`/scanned-documents/${targetBarcode}/preview?cb=${Date.now()}`, {
               responseType: "blob"
             });
           } else {
@@ -173,9 +173,9 @@ function EvaluationPage() {
     }
   }, [subjectId]);
 
-  const updateStats = async (type) => {
-    const today = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
-    const statsKey = 'daily_stats';
+  const updateStats = async (type, marks, maxMarks) => {
+    const today = new Date().toISOString().split('T')[0];
+    const statsKey = 'daily_evaluation_stats';
     let dailyStats = JSON.parse(localStorage.getItem(statsKey)) || {};
 
     const key = `${today}_048`;
@@ -205,7 +205,11 @@ function EvaluationPage() {
       const targetDocId = scriptInfo?.docId || (!isNaN(subjectId) ? subjectId : null);
       const newStatus = type === 'completed' ? 'Completed' : (type === 'rejected' ? 'Rejected' : 'UFM');
       if (targetDocId) {
-        await apiClient.patch(`/scanned-documents/${targetDocId}/status?status=${newStatus}`).catch(() => {});
+        let url = `/scanned-documents/${targetDocId}/status?status=${newStatus}`;
+        if (type === 'completed' && marks !== undefined && maxMarks !== undefined) {
+          url += `&marks=${marks}&max_marks=${maxMarks}`;
+        }
+        await apiClient.patch(url).catch(() => {});
       }
     } catch (e) {
       console.warn("Could not patch document status to backend:", e);
@@ -260,7 +264,7 @@ function EvaluationPage() {
     const notes = window.prompt(`Enter Notes :\nScore ${totalScore} out of ${maxTotalScore}`, "");
     
     if (notes !== null) {
-      updateStats('completed');
+      updateStats('completed', totalScore, maxTotalScore);
       navigate('/examiner/day-wise-report', { replace: true });
     }
   };
